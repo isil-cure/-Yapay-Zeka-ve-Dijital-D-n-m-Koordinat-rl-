@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String       @id @default(uuid())
+  email            String       @unique
+  password         String
+  fullName         String
+  department       String
+  role             String       @default("STAFF") // "ADMIN" | "STAFF"
+  phone            String?
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  assignedAssets   Asset[]      @relation("UserCurrentAssets")
+  custodyTarget    CustodyLog[] @relation("UserCustodyTarget")
+  performedCustody CustodyLog[] @relation("UserPerformedCustody")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  icon      String?  @default("Laptop")
+  assets    Asset[]
+  createdAt DateTime @default(now())
+}
+
+model Asset {
+  id              String       @id @default(uuid())
+  assetTag        String       @unique // e.g. "AST-2026-0001"
+  serialNumber    String       @unique
+  brand           String
+  model           String
+  categoryId      String
+  category        Category     @relation(fields: [categoryId], references: [id])
+  purchaseDate    DateTime
+  warrantyEndDate DateTime?
+  status          String       @default("AVAILABLE") // "AVAILABLE", "ASSIGNED", "IN_REPAIR", "SCRAPPED"
+  location        String?      @default("Merkez Depo")
+  cost            Float?
+  notes           String?
+  currentUserId   String?
+  currentUser     User?        @relation("UserCurrentAssets", fields: [currentUserId], references: [id])
+  custodyLogs     CustodyLog[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model CustodyLog {
+  id            String   @id @default(uuid())
+  assetId       String
+  asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?    @relation("UserCustodyTarget", fields: [userId], references: [id])
+  actionType    String   // "ASSIGN", "RETURN", "REPORT_FAULT", "REPAIR_SENT", "REPAIR_RETURN", "SCRAP"
+  performedById String
+  performedBy   User     @relation("UserPerformedCustody", fields: [performedById], references: [id])
+  notes         String?
+  documentNo    String?
+  actionDate    DateTime @default(now())
+}

@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Production Builds
+dist/
+backend/dist/
+frontend/dist/
+
+# Local Database & Cache
+*.db
+*.db-journal
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Environment Local Variables
+backend/.env
+
+# Temporary / OS files
+*.log
+.DS_Store
+Thumbs.db
