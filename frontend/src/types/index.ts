@@ -11,6 +11,7 @@ export interface User {
   department: string;
   role: Role;
   createdAt?: string;
+  assignedAssets?: Asset[];
   _count?: {
     assignedAssets: number;
     assignmentHistory?: number;

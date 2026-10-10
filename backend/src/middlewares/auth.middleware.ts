@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+import { Role } from '../models.types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'togu-jwt-secret-key-2026';
 

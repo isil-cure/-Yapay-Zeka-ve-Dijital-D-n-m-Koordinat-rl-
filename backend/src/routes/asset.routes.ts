@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { AssetController } from '../controllers/asset.controller';
 import { AssignmentController } from '../controllers/assignment.controller';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware';
-import { Role } from '@prisma/client';
+import { Role } from '../models.types';
 
 const router = Router();
 

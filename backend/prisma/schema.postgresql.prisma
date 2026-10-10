@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum AssetStatus {
+  ACTIVE
+  IN_STOCK
+  IN_REPAIR
+  SCRAPPED
+}
+
+enum AssignmentAction {
+  ASSIGN
+  RETURN
+  STATUS_CHANGE
+}
+
+model User {
+  id           String              @id @default(uuid())
+  email        String              @unique
+  passwordHash String
+  fullName     String
+  department   String
+  role         Role                @default(STAFF)
+  createdAt    DateTime            @default(now())
+
+  assignedAssets    Asset[]             @relation("UserAssignedAssets")
+  assignmentHistory AssignmentHistory[]
+
+  @@map("users")
+}
+
+model Asset {
+  id               String              @id @default(uuid())
+  assetTag         String              @unique
+  name             String
+  brand            String
+  model            String
+  serialNumber     String              @unique
+  purchaseDate     DateTime
+  status           AssetStatus         @default(IN_STOCK)
+  qrCode           String
+  assignedToUserId String?
+  assignedToUser   User?               @relation("UserAssignedAssets", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  assignmentLogs   AssignmentHistory[]
+
+  @@map("assets")
+}
+
+model AssignmentHistory {
+  id        String           @id @default(uuid())
+  assetId   String
+  asset     Asset            @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    AssignmentAction
+  notes     String?
+  createdAt DateTime         @default(now())
+
+  @@map("assignment_history")
+}

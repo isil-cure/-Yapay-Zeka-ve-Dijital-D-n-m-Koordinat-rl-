@@ -117,38 +117,46 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* Jüri ve Test Girişleri İçin Hızlı Doldurma Butonları */}
+        {/* Jüri ve Değerlendirme Test Girişleri */}
         <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-3">
-            JÜRİ VE TEST HESAPLARI (TEK TIKLA DOLDUR)
-          </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              DEĞERLENDİRME & JÜRİ TEST MODU
+            </span>
+            <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/40">
+              Hızlı Doldur
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => handleFillDemo('admin@gop.edu.tr', 'admin123')}
-              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-amber-500/50 group"
+              className="p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-amber-500/50 group"
             >
               <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
                 <Shield className="w-3.5 h-3.5" />
-                <span>Admin</span>
+                <span>Yönetici (Admin)</span>
               </div>
-              <div className="text-[11px] text-slate-400 truncate mt-0.5">admin@gop.edu.tr</div>
-              <div className="text-[10px] text-slate-400 font-mono">Şifre: admin123</div>
+              <div className="text-[11px] text-slate-400 truncate mt-1">admin@gop.edu.tr</div>
             </button>
 
             <button
               type="button"
               onClick={() => handleFillDemo('personel@gop.edu.tr', 'personel123')}
-              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-blue-500/50 group"
+              className="p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-blue-500/50 group"
             >
               <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
                 <UserIcon className="w-3.5 h-3.5" />
-                <span>Personel</span>
+                <span>Personel (Staff)</span>
               </div>
-              <div className="text-[11px] text-slate-400 truncate mt-0.5">personel@gop.edu.tr</div>
-              <div className="text-[10px] text-slate-400 font-mono">Şifre: personel123</div>
+              <div className="text-[11px] text-slate-400 truncate mt-1">personel@gop.edu.tr</div>
             </button>
           </div>
+
+          <p className="text-[10px] text-slate-500 text-center mt-3">
+            🔒 Şifreler veritabanında tek yönlü bcrypt algoritmasıyla tuzlanarak (salt) şifrelenmiştir.
+          </p>
         </div>
 
         {/* Geliştirici İmzası */}

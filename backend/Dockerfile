@@ -10,6 +10,8 @@ RUN npm install
 
 COPY src ./src
 
+# Docker PostgreSQL şemasıyla derle
+RUN cp prisma/schema.postgresql.prisma prisma/schema.prisma 2>/dev/null || true
 RUN npx prisma generate
 RUN npm run build
 
@@ -31,5 +33,5 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 5000
 
-# Container başlarken otomatik veritabanı şemasını senkronize eder, seed verilerini yükler ve sunucuyu başlatır
-CMD ["sh", "-c", "npx prisma db push && npx prisma db seed && node dist/index.js"]
+# Container başlarken otomatik PostgreSQL şemasını senkronize eder, seed verilerini yükler ve sunucuyu başlatır
+CMD ["sh", "-c", "cp prisma/schema.postgresql.prisma prisma/schema.prisma 2>/dev/null || true && npx prisma db push --accept-data-loss && npx prisma db seed && node dist/index.js"]

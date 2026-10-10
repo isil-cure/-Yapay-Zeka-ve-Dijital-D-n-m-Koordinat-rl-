@@ -22,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Genel Bakış & Özet', icon: LayoutDashboard },
     { id: 'assets', label: 'Demirbaş Envanteri', icon: Layers },
+    { id: 'my-assets', label: 'Kişisel Zimmetlerim', icon: ShieldCheck },
     ...(isAdmin ? [{ id: 'users', label: 'Personel & Yetki', icon: Users }] : []),
   ];
 

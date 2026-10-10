@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-import { Role } from '@prisma/client';
+import { Role } from '../models.types';
 
 export class UserController {
   /**

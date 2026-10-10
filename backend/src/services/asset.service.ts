@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { AssetStatus, AssignmentAction } from '@prisma/client';
+import { AssetStatus, AssignmentAction } from '../models.types';
 import { QrService } from './qr.service';
 
 export interface CreateAssetInput {

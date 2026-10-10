@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { AssetService } from '../services/asset.service';
-import { AssetStatus, AssignmentAction, Prisma } from '@prisma/client';
+import { AssetStatus, AssignmentAction } from '../models.types';
+import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 
 export class AssetController {
@@ -95,19 +96,18 @@ export class AssetController {
         where.assignedToUser = {
           department: {
             contains: department,
-            mode: 'insensitive',
           },
         };
       }
 
       if (search) {
         where.OR = [
-          { assetTag: { contains: search, mode: 'insensitive' } },
-          { name: { contains: search, mode: 'insensitive' } },
-          { brand: { contains: search, mode: 'insensitive' } },
-          { model: { contains: search, mode: 'insensitive' } },
-          { serialNumber: { contains: search, mode: 'insensitive' } },
-          { assignedToUser: { fullName: { contains: search, mode: 'insensitive' } } },
+          { assetTag: { contains: search } },
+          { name: { contains: search } },
+          { brand: { contains: search } },
+          { model: { contains: search } },
+          { serialNumber: { contains: search } },
+          { assignedToUser: { fullName: { contains: search } } },
         ];
       }
 

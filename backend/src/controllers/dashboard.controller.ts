@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
-import { AssetStatus } from '@prisma/client';
+import { AssetStatus } from '../models.types';
 
 export class DashboardController {
   /**

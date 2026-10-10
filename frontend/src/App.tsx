@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { AssetsPage } from './pages/AssetsPage';
 import { AssetDetailPage } from './pages/AssetDetailPage';
+import { MyAssetsPage } from './pages/MyAssetsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -118,6 +119,10 @@ export const App: React.FC = () => {
               }}
               isAdmin={isAdmin}
             />
+          )}
+
+          {currentTab === 'my-assets' && (
+            <MyAssetsPage onSelectAssetDetail={navigateToAssetDetail} />
           )}
 
           {currentTab === 'users' && isAdmin && <UserManagementPage />}
