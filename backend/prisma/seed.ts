@@ -1,6 +1,20 @@
-import { PrismaClient, Role, AssetStatus, AssignmentAction } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import QRCode from 'qrcode';
+
+// Hem PostgreSQL Enumu hem SQLite String uyumluluğu
+const Role = { ADMIN: 'ADMIN', STAFF: 'STAFF' } as const;
+const AssetStatus = {
+  ACTIVE: 'ACTIVE',
+  IN_STOCK: 'IN_STOCK',
+  IN_REPAIR: 'IN_REPAIR',
+  SCRAPPED: 'SCRAPPED',
+} as const;
+const AssignmentAction = {
+  ASSIGN: 'ASSIGN',
+  RETURN: 'RETURN',
+  STATUS_CHANGE: 'STATUS_CHANGE',
+} as const;
 
 const prisma = new PrismaClient();
 
