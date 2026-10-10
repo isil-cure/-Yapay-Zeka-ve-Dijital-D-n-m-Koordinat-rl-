@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { AssetsPage } from './pages/AssetsPage';
 import { AssetDetailPage } from './pages/AssetDetailPage';
 import { MyAssetsPage } from './pages/MyAssetsPage';
+import { FieldScannerPage } from './pages/FieldScannerPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -117,6 +118,13 @@ export const App: React.FC = () => {
                 setSelectedAssetId(null);
                 setCurrentTab('assets');
               }}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {currentTab === 'scanner' && (
+            <FieldScannerPage
+              onSelectAssetDetail={navigateToAssetDetail}
               isAdmin={isAdmin}
             />
           )}

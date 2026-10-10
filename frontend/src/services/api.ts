@@ -130,7 +130,7 @@ export const userApi = {
     return res.data;
   },
 
-  update: async (id: string, data: Partial<User>) => {
+  update: async (id: string, data: Partial<User> & { password?: string }) => {
     const res = await api.put<{ success: boolean; data: User }>(`/users/${id}`, data);
     return res.data;
   },

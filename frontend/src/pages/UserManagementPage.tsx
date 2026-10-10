@@ -34,6 +34,7 @@ export const UserManagementPage: React.FC = () => {
   const [editFullName, setEditFullName] = useState('');
   const [editDepartment, setEditDepartment] = useState('');
   const [editRole, setEditRole] = useState<Role>('STAFF');
+  const [editPassword, setEditPassword] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -89,16 +90,27 @@ export const UserManagementPage: React.FC = () => {
     e.preventDefault();
     if (!editingUser) return;
 
+    if (editPassword && editPassword.trim().length < 6) {
+      toast.error('Yeni şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await userApi.update(editingUser.id, {
         fullName: editFullName,
         department: editDepartment,
         role: editRole,
+        password: editPassword.trim() || undefined,
       });
 
-      toast.success('Personel bilgileri güncellendi.');
+      toast.success(
+        editPassword.trim()
+          ? 'Personel bilgileri ve şifresi başarıyla güncellendi.'
+          : 'Personel bilgileri güncellendi.'
+      );
       setEditingUser(null);
+      setEditPassword('');
       loadUsers();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Güncelleme yapılamadı.');
@@ -126,6 +138,7 @@ export const UserManagementPage: React.FC = () => {
     setEditFullName(user.fullName);
     setEditDepartment(user.department);
     setEditRole(user.role);
+    setEditPassword('');
   };
 
   return (
@@ -245,7 +258,7 @@ export const UserManagementPage: React.FC = () => {
                         <button
                           onClick={() => openEditModal(u)}
                           className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors"
-                          title="Düzenle"
+                          title="Düzenle ve Şifre Yönet"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -377,12 +390,20 @@ export const UserManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* Personel Düzenle Modal */}
+      {/* Personel Düzenle & Şifre Yönet Modal */}
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden animate-scaleUp">
             <div className="flex items-center justify-between p-5 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white">Personel Bilgilerini Düzenle</h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Personel & Şifre Yönetimi</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">{editingUser.email}</p>
+                </div>
+              </div>
               <button
                 onClick={() => setEditingUser(null)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
@@ -432,6 +453,26 @@ export const UserManagementPage: React.FC = () => {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>ŞİFRE YÖNETİMİ / SIFIRLAMA</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500 lowercase font-normal">(isteğe bağlı)</span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="Yeni şifre (Değiştirmek istemiyorsanız boş bırakın)"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Yönetici olarak bu personelin şifresini doğrudan buradan sıfırlayabilirsiniz (en az 6 karakter).
+                </p>
+              </div>
+
               <div className="p-5 border-t border-slate-800 -mx-6 -mb-6 mt-6 bg-slate-950/60 flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -455,3 +496,4 @@ export const UserManagementPage: React.FC = () => {
     </div>
   );
 };
+

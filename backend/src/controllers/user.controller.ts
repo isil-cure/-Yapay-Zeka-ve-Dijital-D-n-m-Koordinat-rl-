@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../prisma';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { Role } from '../models.types';
@@ -43,17 +44,22 @@ export class UserController {
 
   /**
    * PUT /api/users/:id
-   * Kullanıcı güncelleme (Sadece ADMIN)
+   * Kullanıcı güncelleme ve şifre sıfırlama (Sadece ADMIN)
    */
   static async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const id = String(req.params.id);
-      const { fullName, department, role } = req.body;
+      const { fullName, department, role, password } = req.body;
 
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) {
         res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı.' });
         return;
+      }
+
+      let passwordHash: string | undefined;
+      if (password && String(password).trim().length >= 6) {
+        passwordHash = await bcrypt.hash(String(password).trim(), 10);
       }
 
       const updated = await prisma.user.update({
@@ -62,6 +68,7 @@ export class UserController {
           fullName: fullName ? String(fullName).trim() : undefined,
           department: department ? String(department).trim() : undefined,
           role: role === 'ADMIN' ? Role.ADMIN : role === 'STAFF' ? Role.STAFF : undefined,
+          passwordHash: passwordHash || undefined,
         },
         select: {
           id: true,
