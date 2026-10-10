@@ -160,29 +160,64 @@ erDiagram
 
 ---
 
+## ⚙️ Ortam Değişkenleri (.env Yapılandırması)
+
+Projenin kök dizininde ve `backend/` dizininde ortam değişkenlerini barındıran `.env.example` şablon dosyası bulunmaktadır. Docker Compose ile çalıştırmada ortam değişkenleri doğrudan `docker-compose.yml` içerisinden otomatik olarak enjekte edilir.
+
+Manuel çalıştırmada `.env.example` dosyasını kopyalayarak `.env` oluşturabilirsiniz:
+```bash
+cp .env.example .env
+```
+
+| Ortam Değişkeni | Varsayılan Değer | Açıklama |
+| :--- | :--- | :--- |
+| `PORT` | `5000` | Backend Express API sunucusunun dinleyeceği port |
+| `DATABASE_URL` | `postgresql://togu_admin:togu_secure_password_2026@postgres:5432/togu_inventory?schema=public` | PostgreSQL veritabanı bağlantı URI'si |
+| `JWT_SECRET` | `togu-jwt-secret-key-2026` | Kullanıcı oturumlarını imzalamak için kullanılan kriptografik anahtar |
+| `JWT_EXPIRES_IN` | `24h` | JWT oturum token geçerlilik süresi |
+| `NODE_ENV` | `production` / `development` | Çalışma ortamı modu |
+| `POSTGRES_USER` | `togu_admin` | Docker PostgreSQL veritabanı kullanıcı adı |
+| `POSTGRES_PASSWORD` | `togu_secure_password_2026` | Docker PostgreSQL veritabanı şifresi |
+| `POSTGRES_DB` | `togu_inventory` | Docker PostgreSQL veritabanı adı |
+| `VITE_API_URL` | `http://localhost:5000/api` | Frontend'in API isteklerini yönlendireceği uç nokta |
+
+---
+
 ## 🖼️ Ekran Görüntüleri ve Arayüz Önizlemeleri
 
 ### 1. Yönetici Gösterge Paneli (Dashboard)
-Üstte 4 istatistik kartı, departman dağılım çubukları ve anlık denetim hareketleri:
+Üstte 4 dinamik istatistik kartı (Toplam, Zimmette, Depoda, Arızalı), departman zimmet dağılım çubukları ve en son gerçekleştirilen zimmet hareketleri:
 ![Dashboard](docs/dashboard.png)
 
-### 2. Demirbaş Envanteri ve Durum Filtreleri
+### 2. Mobil Kamera ile QR Okuma & Saha Modu Cihaz Tanıma
+Kameradan veya web kamerasından demirbaş QR etiketinin okutulması; cihazın kimde olduğu, kalan garanti süresi, alım tarihi ve teknik özelliklerinin anında listelenmesi:
+![QR Saha Modu](docs/scanner.png)
+
+### 3. Kişisel Zimmet Ekranı ve Resmi TOGU Zimmet Teslim-Tesellüm Tutanağı (A4 / PDF)
+Giriş yapan personelin kendi üzerine zimmetli cihazları listelediği ekran ve tek tıkla resmi TOGU antetli teslim-tesellüm protokolü çıktısı (ıslak imza & kaşe alanları ile):
+![Resmi Zimmet Tutanağı](docs/protocol.png)
+
+### 4. Demirbaş Envanteri ve Durum Filtreleri
 Anlık arama, durum rozetleri, sayfalama ve hızlı zimmetleme butonları:
 ![Demirbaş Listesi](docs/assets.png)
 
-### 3. QR Kod Etiket Modalı ve Yazdırma Önizlemesi
-Kurumsal TOGU logolu, yazdırmaya ve PNG indirmeye hazır QR kartı:
+### 5. QR Kod Etiket Modalı ve Yazdırma Önizlemesi
+Kurumsal TOGU logolu, yüksek çözünürlüklü ve hataya dayanıklı (Level H) QR kod etiketi:
 ![QR Modal](docs/qr-modal.png)
 
 ---
 
-## 🌟 Öne Çıkan Mühendislik Prensipleri
-1. **Clean Architecture & Katmanlı Yapı:** Kontrolcüler (`controllers`), iş servisleri (`services`), doğrulama ara yazılımları (`middlewares`) ve rotalar (`routes`) birbirinden net biçimde ayrıştırılmıştır.
-2. **Otomatik QR Üretimi:** Her yeni donanım kaydında `qrcode` kütüphanesiyle yüksek çözünürlüklü ve hataya dayanıklı (`Level H`) Base64 Data URL doğrudan oluşturulup `Asset.qrCode` alanına işlenir.
-3. **Denetim İzi (Audit Trail):** Hiçbir zimmet atama, iade veya donanım durum değişikliği loglanmadan geçmez; `AssignmentHistory` tablosu üzerinde zaman çizelgesi olarak kronolojik olarak tutulur.
-4. **Tip Güvenliği (Full Type-Safety):** Backend TypeScript modelleri ve Prisma Client ile %100 tip güvenliği, Frontend ise katı TypeScript arabirimleriyle korunmaktadır.
-5. **Modern Kurumsal UI/UX:** Tailwind CSS ile Tokat Gaziosmanpaşa Üniversitesi kurumsal renklerine uygun koyu lacivert ve gri tonlar, mobil uyumlu hamburger menü ve `react-hot-toast` etkileşimleri.
+## 🌟 Öne Çıkan Mühendislik Prensipleri ve Artı Puan Özellikleri
+
+1. **🐳 Tek Tuşla Docker ve docker-compose (Artı Puan):** `docker-compose up --build` komutuyla PostgreSQL 15, Node.js Backend ve Nginx Frontend servisleri bağımlılık sıralaması ve `healthcheck` mekanizmasıyla sıfır konfigürasyonla tek hamlede ayağa kalkar.
+2. **📱 Mobil Kamera ile Saha QR Okuma:** `html5-qrcode` kütüphanesiyle donatılmış `FieldScannerPage`, donanım etiketlerini cihaz kamerasıyla okuyarak garanti süresini ve zimmet sahibini sahadayken 1 saniyede ekrana yansıtır.
+3. **👥 RBAC Yetkilendirme ve Şifre Yönetimi:** Admin ve Staff rolleri ayrıştırılmıştır. Yöneticiler personel ekleyip silebilir ve şifrelerini `bcrypt` 10-salt güvenliğiyle doğrudan sıfırlayabilir.
+4. **🖨️ Resmi Islak İmzalı Zimmet Protokolü:** A4 kağıt standardına uyumlu `@media print` CSS yapısı sayesinde kurumsal teslim tutanağı doğrudan yazıcıya veya PDF formatına aktarılabilir.
+5. **Clean Architecture & Katmanlı Yapı:** Kontrolcüler (`controllers`), iş servisleri (`services`), doğrulama ara yazılımları (`middlewares`) ve rotalar (`routes`) birbirinden net biçimde ayrıştırılmıştır.
+6. **Denetim İzi (Audit Trail):** Hiçbir zimmet atama, iade veya donanım durum değişikliği loglanmadan geçmez; `AssignmentHistory` tablosu üzerinde zaman çizelgesi olarak kronolojik olarak tutulur.
+7. **Tip Güvenliği (Full Type-Safety):** Backend TypeScript modelleri ve Prisma Client ile %100 tip güvenliği, Frontend ise katı TypeScript arabirimleriyle korunmaktadır.
 
 ---
 
 > **Telif & Lisans:** Bu proje, Tokat Gaziosmanpaşa Üniversitesi Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü "Aday Mühendis Değerlendirmesi" amacıyla **Işıl Cüre** tarafından sıfırdan geliştirilmiştir.
+
