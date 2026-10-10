@@ -1,105 +1,142 @@
-const API_BASE = '/api';
+import axios from 'axios';
+import { User, Asset, AssetStatus, DashboardStats, Pagination } from '../types';
 
-interface RequestOptions extends RequestInit {
-  data?: any;
-}
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export async function request<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const token = localStorage.getItem('it_asset_token');
-
-  const headers: Record<string, string> = {
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
+  },
+  timeout: 10000,
+});
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const config: RequestInit = {
-    ...options,
-    headers,
-  };
-
-  if (options.data) {
-    config.body = JSON.stringify(options.data);
-  }
-
-  const response = await fetch(`${API_BASE}${endpoint}`, config);
-
-  if (response.status === 401) {
-    // Oturum süresi dolmuş veya geçersiz
-    localStorage.removeItem('it_asset_token');
-    localStorage.removeItem('it_asset_user');
-    if (!window.location.pathname.includes('/login')) {
-      window.dispatchEvent(new Event('auth:unauthorized'));
+// Request Interceptor: JWT ekleme
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor: 401 kontrolü
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Oturum süresi dolduysa veya geçersizse temizle
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
   }
+);
 
-  const responseData = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const errorMsg = responseData.message || 'İşlem gerçekleştirilemedi.';
-    throw new Error(errorMsg);
-  }
-
-  return responseData;
-}
-
-export const api = {
-  // Auth
-  login: (data: any) => request('/auth/login', { method: 'POST', data }),
-  getMe: () => request('/auth/me'),
-  changePassword: (data: any) => request('/auth/change-password', { method: 'PUT', data }),
-
-  // Dashboard
-  getStats: () => request('/dashboard/stats'),
-
-  // Assets
-  getAssets: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, val]) => {
-      if (val !== undefined && val !== null && val !== '') query.append(key, String(val));
+// ==================== AUTH API ====================
+export const authApi = {
+  login: async (email: string, password: string) => {
+    const res = await api.post<{ success: boolean; token: string; user: User }>('/auth/login', {
+      email,
+      password,
     });
-    return request(`/assets?${query.toString()}`);
+    return res.data;
   },
-  getAsset: (id: string) => request(`/assets/${id}`),
-  createAsset: (data: any) => request('/assets', { method: 'POST', data }),
-  updateAsset: (id: string, data: any) => request(`/assets/${id}`, { method: 'PUT', data }),
-  deleteAsset: (id: string) => request(`/assets/${id}`, { method: 'DELETE' }),
 
-  // Categories
-  getCategories: () => request('/categories'),
-  createCategory: (data: any) => request('/categories', { method: 'POST', data }),
+  register: async (userData: { email: string; password: string; fullName: string; department: string; role?: string }) => {
+    const res = await api.post<{ success: boolean; user: User }>('/auth/register', userData);
+    return res.data;
+  },
 
-  // Custody
-  assignAsset: (data: any) => request('/custody/assign', { method: 'POST', data }),
-  returnAsset: (data: any) => request('/custody/return', { method: 'POST', data }),
-  reportFault: (data: any) => request('/custody/report-fault', { method: 'POST', data }),
-  getCustodyLogs: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, val]) => {
-      if (val !== undefined && val !== null && val !== '') query.append(key, String(val));
+  getMe: async () => {
+    const res = await api.get<{ success: boolean; user: User }>('/auth/me');
+    return res.data;
+  },
+};
+
+// ==================== ASSET API ====================
+export const assetApi = {
+  getAll: async (params?: { page?: number; limit?: number; search?: string; status?: AssetStatus; department?: string }) => {
+    const res = await api.get<{ success: boolean; data: Asset[]; pagination: Pagination }>('/assets', {
+      params,
     });
-    return request(`/custody/logs?${query.toString()}`);
+    return res.data;
   },
-  getMyAssets: () => request('/custody/my-assets'),
 
-  // Users
-  getUsers: (params: Record<string, any> = {}) => {
-    const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, val]) => {
-      if (val !== undefined && val !== null && val !== '') query.append(key, String(val));
+  getById: async (id: string) => {
+    const res = await api.get<{ success: boolean; data: Asset }>(`/assets/${id}`);
+    return res.data;
+  },
+
+  getByTag: async (assetTag: string) => {
+    const res = await api.get<{ success: boolean; data: Asset }>(`/assets/qr/${assetTag}`);
+    return res.data;
+  },
+
+  create: async (assetData: Partial<Asset> & { notes?: string }) => {
+    const res = await api.post<{ success: boolean; data: Asset }>('/assets', assetData);
+    return res.data;
+  },
+
+  update: async (id: string, assetData: Partial<Asset> & { notes?: string }) => {
+    const res = await api.put<{ success: boolean; data: Asset }>(`/assets/${id}`, assetData);
+    return res.data;
+  },
+
+  delete: async (id: string) => {
+    const res = await api.delete<{ success: boolean; message: string }>(`/assets/${id}`);
+    return res.data;
+  },
+
+  assign: async (id: string, userId: string, notes?: string) => {
+    const res = await api.post<{ success: boolean; data: Asset }>(`/assets/${id}/assign`, {
+      userId,
+      notes,
     });
-    return request(`/users?${query.toString()}`);
+    return res.data;
   },
-  getUser: (id: string) => request(`/users/${id}`),
-  createUser: (data: any) => request('/users', { method: 'POST', data }),
-  updateUser: (id: string, data: any) => request(`/users/${id}`, { method: 'PUT', data }),
-  resetUserPassword: (id: string, data: any) => request(`/users/${id}/reset-password`, { method: 'PUT', data }),
-  deleteUser: (id: string) => request(`/users/${id}`, { method: 'DELETE' }),
 
-  // QR & Saha Hızlı İşlemler
-  lookupQr: (query: string) => request(`/qr/lookup/${encodeURIComponent(query)}`),
-  quickAction: (data: any) => request('/qr/quick-action', { method: 'POST', data }),
+  return: async (id: string, notes?: string) => {
+    const res = await api.post<{ success: boolean; data: Asset }>(`/assets/${id}/return`, {
+      notes,
+    });
+    return res.data;
+  },
+
+  getHistory: async (id: string) => {
+    const res = await api.get<{ success: boolean; data: any[] }>(`/assets/${id}/history`);
+    return res.data;
+  },
+};
+
+// ==================== DASHBOARD API ====================
+export const dashboardApi = {
+  getStats: async () => {
+    const res = await api.get<{ success: boolean; data: DashboardStats }>('/dashboard/stats');
+    return res.data;
+  },
+};
+
+// ==================== USER API ====================
+export const userApi = {
+  getAll: async () => {
+    const res = await api.get<{ success: boolean; data: User[] }>('/users');
+    return res.data;
+  },
+
+  update: async (id: string, data: Partial<User>) => {
+    const res = await api.put<{ success: boolean; data: User }>(`/users/${id}`, data);
+    return res.data;
+  },
+
+  delete: async (id: string) => {
+    const res = await api.delete<{ success: boolean; message: string }>(`/users/${id}`);
+    return res.data;
+  },
 };

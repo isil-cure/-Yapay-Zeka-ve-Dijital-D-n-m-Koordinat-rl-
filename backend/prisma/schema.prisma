@@ -3,67 +3,74 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id               String       @id @default(uuid())
-  email            String       @unique
-  password         String
-  fullName         String
-  department       String
-  role             String       @default("STAFF") // "ADMIN" | "STAFF"
-  phone            String?
-  isActive         Boolean      @default(true)
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-
-  assignedAssets   Asset[]      @relation("UserCurrentAssets")
-  custodyTarget    CustodyLog[] @relation("UserCustodyTarget")
-  performedCustody CustodyLog[] @relation("UserPerformedCustody")
+enum Role {
+  ADMIN
+  STAFF
 }
 
-model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  code      String   @unique
-  icon      String?  @default("Laptop")
-  assets    Asset[]
-  createdAt DateTime @default(now())
+enum AssetStatus {
+  ACTIVE
+  IN_STOCK
+  IN_REPAIR
+  SCRAPPED
+}
+
+enum AssignmentAction {
+  ASSIGN
+  RETURN
+  STATUS_CHANGE
+}
+
+model User {
+  id           String              @id @default(uuid())
+  email        String              @unique
+  passwordHash String
+  fullName     String
+  department   String
+  role         Role                @default(STAFF)
+  createdAt    DateTime            @default(now())
+
+  // İlişkiler
+  assignedAssets    Asset[]             @relation("UserAssignedAssets")
+  assignmentHistory AssignmentHistory[]
+
+  @@map("users")
 }
 
 model Asset {
-  id              String       @id @default(uuid())
-  assetTag        String       @unique // e.g. "AST-2026-0001"
-  serialNumber    String       @unique
-  brand           String
-  model           String
-  categoryId      String
-  category        Category     @relation(fields: [categoryId], references: [id])
-  purchaseDate    DateTime
-  warrantyEndDate DateTime?
-  status          String       @default("AVAILABLE") // "AVAILABLE", "ASSIGNED", "IN_REPAIR", "SCRAPPED"
-  location        String?      @default("Merkez Depo")
-  cost            Float?
-  notes           String?
-  currentUserId   String?
-  currentUser     User?        @relation("UserCurrentAssets", fields: [currentUserId], references: [id])
-  custodyLogs     CustodyLog[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id               String              @id @default(uuid())
+  assetTag         String              @unique // örn: "TOGU-2026-001"
+  name             String
+  brand            String
+  model            String
+  serialNumber     String              @unique
+  purchaseDate     DateTime
+  status           AssetStatus         @default(IN_STOCK)
+  qrCode           String              // Base64 Data URL
+  assignedToUserId String?
+  assignedToUser   User?               @relation("UserAssignedAssets", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  // İlişkiler
+  assignmentLogs   AssignmentHistory[]
+
+  @@map("assets")
 }
 
-model CustodyLog {
-  id            String   @id @default(uuid())
-  assetId       String
-  asset         Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  userId        String?
-  user          User?    @relation("UserCustodyTarget", fields: [userId], references: [id])
-  actionType    String   // "ASSIGN", "RETURN", "REPORT_FAULT", "REPAIR_SENT", "REPAIR_RETURN", "SCRAP"
-  performedById String
-  performedBy   User     @relation("UserPerformedCustody", fields: [performedById], references: [id])
-  notes         String?
-  documentNo    String?
-  actionDate    DateTime @default(now())
+model AssignmentHistory {
+  id        String           @id @default(uuid())
+  assetId   String
+  asset     Asset            @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    AssignmentAction
+  notes     String?
+  createdAt DateTime         @default(now())
+
+  @@map("assignment_history")
 }

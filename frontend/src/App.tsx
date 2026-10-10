@@ -1,112 +1,145 @@
-import React, { useState } from 'react';
-import { useAuth } from './context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { User } from './types';
 import { LoginPage } from './pages/LoginPage';
-import { Sidebar } from './components/Sidebar';
-import { Topbar } from './components/Topbar';
 import { DashboardPage } from './pages/DashboardPage';
 import { AssetsPage } from './pages/AssetsPage';
-import { CustodyPage } from './pages/CustodyPage';
-import { UsersPage } from './pages/UsersPage';
-import { MyCustodyPage } from './pages/MyCustodyPage';
-import { FieldScannerPage } from './pages/FieldScannerPage';
-import { QrScannerModal } from './components/QrScannerModal';
-import { RefreshCw } from 'lucide-react';
+import { AssetDetailPage } from './pages/AssetDetailPage';
+import { UserManagementPage } from './pages/UserManagementPage';
+import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { AddAssetModal } from './components/AddAssetModal';
+import { authApi } from './services/api';
+import toast from 'react-hot-toast';
 
 export const App: React.FC = () => {
-  const { isAuthenticated, loading, isAdmin } = useAuth();
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem('token');
+  });
+
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isQuickScanModalOpen, setIsQuickScanModalOpen] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState<boolean>(false);
 
-  if (loading) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#0b0f19',
-          color: '#94a3b8',
-        }}
-      >
-        <RefreshCw size={36} className="spin-animate" color="#3b82f6" style={{ marginBottom: '1rem' }} />
-        <p style={{ fontWeight: 600 }}>Sistem yükleniyor...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
-
-  const getPageTitle = () => {
-    switch (currentTab) {
-      case 'dashboard':
-        return { title: 'Gösterge Paneli', subtitle: 'Genel istatistikler ve anlık durum' };
-      case 'assets':
-        return { title: 'Demirbaş Envanteri', subtitle: 'Donanım listesi, filtreleme ve QR etiketleri' };
-      case 'custody':
-        return { title: 'Zimmet Yönetimi & Tarihçe', subtitle: 'Personele atama, iade ve denetim logları' };
-      case 'my-assets':
-        return { title: 'Kişisel Zimmetlerim', subtitle: 'Üzerinize kayıtlı donanımlar ve zimmet tutanağı' };
-      case 'scanner':
-        return { title: 'Saha QR Tarayıcı', subtitle: 'Canlı kamera tarama ve hızlı saha aksiyonları' };
-      case 'users':
-        return { title: 'Kullanıcı ve Rol Yönetimi', subtitle: 'Personel hesapları ve yetkilendirme' };
-      default:
-        return { title: 'IT Demirbaş ve Zimmet Sistemi', subtitle: '' };
+  // Oturum kontrolü
+  useEffect(() => {
+    if (token) {
+      authApi.getMe().catch(() => {
+        handleLogout();
+      });
     }
+  }, [token]);
+
+  const handleLoginSuccess = (loggedInUser: User, receivedToken: string) => {
+    setUser(loggedInUser);
+    setToken(receivedToken);
+    setCurrentTab('dashboard');
   };
 
-  const { title, subtitle } = getPageTitle();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setToken(null);
+    setSelectedAssetId(null);
+    toast.success('Oturum kapatıldı.');
+  };
+
+  if (!token || !user) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  const isAdmin = user.role === 'ADMIN';
+
+  const navigateToAssetsWithFilter = (status?: string) => {
+    setStatusFilter(status || '');
+    setCurrentTab('assets');
+    setSelectedAssetId(null);
+  };
+
+  const navigateToAssetDetail = (assetId: string) => {
+    setSelectedAssetId(assetId);
+    setCurrentTab('asset-detail');
+  };
 
   return (
-    <div className="app-layout">
-      {/* Responsive Sidebar */}
+    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-100">
+      {/* Yan Menü (Sidebar) */}
       <Sidebar
-        currentTab={currentTab}
+        currentTab={currentTab === 'asset-detail' ? 'assets' : currentTab}
         onSelectTab={(tab) => {
-          // If staff tries to access users page, redirect to dashboard
-          if (tab === 'users' && !isAdmin) {
-            setCurrentTab('dashboard');
-          } else {
-            setCurrentTab(tab);
-          }
+          setSelectedAssetId(null);
+          setCurrentTab(tab);
         }}
+        user={user}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      {/* Main App Container */}
-      <div className="main-wrapper">
-        <Topbar
-          title={title}
-          subtitle={subtitle}
-          onOpenMobileMenu={() => setIsSidebarOpen(true)}
-          onQuickScan={() => setIsQuickScanModalOpen(true)}
-          onNewAsset={currentTab === 'assets' ? undefined : undefined}
+      {/* Ana Gövde */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Üst Bar (Navbar) */}
+        <Navbar
+          user={user}
+          onLogout={handleLogout}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
         />
 
-        <main className="content-body">
-          {currentTab === 'dashboard' && <DashboardPage onNavigateTab={setCurrentTab} />}
-          {currentTab === 'assets' && <AssetsPage />}
-          {currentTab === 'custody' && <CustodyPage />}
-          {currentTab === 'my-assets' && <MyCustodyPage />}
-          {currentTab === 'scanner' && <FieldScannerPage />}
-          {currentTab === 'users' && isAdmin && <UsersPage />}
+        {/* İçerik Alanı */}
+        <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
+          {currentTab === 'dashboard' && (
+            <DashboardPage
+              onNavigateAssets={navigateToAssetsWithFilter}
+              onOpenAddModal={() => setIsAddAssetModalOpen(true)}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {currentTab === 'assets' && (
+            <AssetsPage
+              initialStatusFilter={statusFilter}
+              onOpenAddModal={() => setIsAddAssetModalOpen(true)}
+              onSelectAssetDetail={navigateToAssetDetail}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {currentTab === 'asset-detail' && selectedAssetId && (
+            <AssetDetailPage
+              assetId={selectedAssetId}
+              onBack={() => {
+                setSelectedAssetId(null);
+                setCurrentTab('assets');
+              }}
+              isAdmin={isAdmin}
+            />
+          )}
+
+          {currentTab === 'users' && isAdmin && <UserManagementPage />}
         </main>
       </div>
 
-      {/* Topbar Quick Scan Modal */}
-      <QrScannerModal
-        isOpen={isQuickScanModalOpen}
-        onClose={() => setIsQuickScanModalOpen(false)}
-        onAssetFound={(asset) => {
-          setCurrentTab('scanner');
-        }}
-      />
+      {/* Demirbaş Ekleme Modalı */}
+      {isAddAssetModalOpen && (
+        <AddAssetModal
+          isOpen={isAddAssetModalOpen}
+          onClose={() => setIsAddAssetModalOpen(false)}
+          onSuccess={() => {
+            // Aktif sekmedeki veriyi tazelemek için
+            if (currentTab === 'assets') {
+              setCurrentTab('dashboard');
+              setTimeout(() => setCurrentTab('assets'), 50);
+            } else {
+              setCurrentTab('assets');
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

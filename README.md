@@ -1,174 +1,188 @@
-# IT Demirbaş ve Zimmet Yönetim Sistemi
-### T.C. Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü — Aday Mühendis Değerlendirme Projesi
-
-Bu proje, kurum bünyesindeki bilişim donanımlarının (bilgisayar, sunucu, monitör, ağ cihazı, yazıcı vb.) sisteme kaydedildiği, her birine **otomatik benzersiz QR Kod/Barkod** üretildiği, cihaz durumlarının anlık izlendiği, personellere zimmetlendiği ve **mobil kamera ile sahada anında QR taranarak işlem yapılabildiği** uçtan uca modern bir Full-Stack web ve saha yönetim platformudur.
+# 🎓 Tokat Gaziosmanpaşa Üniversitesi
+## Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü
+### Aday Mühendis Değerlendirme Projesi: IT Demirbaş ve Zimmet Yönetim Sistemi
 
 ---
 
-## 📸 Temel Ekranlar ve Özellikler
+### 👩‍💻 Geliştirici & Proje Künyesi
+- **Geliştirici:** Işıl Cüre
+- **GitHub:** [https://github.com/isil-cure](https://github.com/isil-cure)
+- **Kurum:** Tokat Gaziosmanpaşa Üniversitesi (TOGU)
+- **Birim:** Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü
+- **Proje Adı:** IT Demirbaş ve Zimmet Yönetim Sistemi (IT Asset & Custody Tracking System)
+- **Sürüm:** `2.0.0 (Production Architecture)`
 
-1. **Gösterge Paneli (Dashboard):**
-   - Toplam cihaz sayısı, depoda/boşta bekleyen cihazlar, personele zimmetli cihazlar ve teknik servisteki/arızalı cihazların canlı KPI sayaçları.
-   - Cihaz kategorilerine ve departmanlara göre grafiksel dağılım.
-   - Son zimmet ve servis hareketlerinin anlık akışı.
+---
 
-2. **Demirbaş ve Envanter Yönetimi:**
-   - Marka, Model, Seri No, Alım Tarihi, Garanti, Maliyet ve Konum bilgileriyle donanım ekleme/düzenleme/silme.
-   - Her cihaza benzersiz otomatik `AST-YYYY-XXXX` kodu ve QR kod üretimi.
-   - Yazdırılabilir ve indirilebilir kurumsal **QR Kod & Barkod Etiketi**.
-   - Duruma, kategoriye, departmana ve anahtar kelimelere göre anlık çok kriterli filtreleme & sayfalama (Pagination).
-
-3. **Zimmet Yönetimi ve Denetim Tarihçesi (Audit Trail):**
-   - Personele cihaz zimmetleme (Teslim tutanak numarası ve açıklamasıyla).
-   - Zimmetten iade alma (Depoya geri çekme veya doğrudan servise/hurdaya yönlendirme).
-   - Geriye dönük kim, ne zaman teslim aldı/iade etti loglarının tutulduğu eksiksiz denetim tarihçesi.
-
-4. **Kişisel Zimmet Ekranı (Personel Portalı):**
-   - Giriş yapan personelin kendi üzerine zimmetli tüm donanımları görüntüleyebilmesi.
-   - Tek tıkla resmi **"Bilişim Teknolojileri Donanım ve Zimmet Teslim Tutanağı"** yazdırma şablonu.
-   - Personelin kendi cihazı için arıza bildiriminde bulunabilmesi.
-
-5. **Mobil Saha Yönetimi & Canlı Kamera QR Tarayıcı (Bonus İster):**
-   - Cihaz kamerası (veya web kamerası) ile donanım üzerindeki QR kodun sahada canlı taranması.
-   - Taranan cihazın durumunun ve kime ait olduğunun anında ekrana gelmesi.
-   - Sahada tek tıkla **"Personele Teslim Et"**, **"Geri Kabul Et"** veya **"Arıza Durumu Bildir"** hızlı aksiyonları.
-
-6. **Kullanıcı ve Rol Yönetimi (RBAC):**
-   - Admin ve Standart Personel yetkilendirmesi.
-   - Yöneticilerin yeni kullanıcı ekleme, düzenleme, silme ve şifre sıfırlama paneli.
+## 📌 Proje Özeti ve Amaç
+Bu proje; Tokat Gaziosmanpaşa Üniversitesi bünyesinde yer alan tüm bilişim ve donanım varlıklarının (sunucular, ağ anahtarları, iş istasyonları, dizüstü bilgisayarlar, monitörler) merkezi bir envanterde kayıt altına alınması, cihazlara otomatik **QR Kod (Base64 DataURL)** üretilmesi, personele **zimmetleme / depoya iade** süreçlerinin yönetilmesi ve tüm bu hareketlerin denetim iziyle (**AssignmentHistory Timeline**) takip edilmesini sağlayan uçtan uca, kurumsal seviyede bir Full-Stack sistemdir.
 
 ---
 
 ## 🛠️ Teknoloji Yığını (Tech Stack)
 
-- **Backend:** Node.js, Express.js, TypeScript
-- **Veritabanı & ORM:** Prisma ORM, SQLite (sıfır konfigürasyon lokal başlangıç) / PostgreSQL (Docker uyumlu)
-- **Güvenlik & Yetkilendirme:** JWT (JSON Web Tokens), bcryptjs parola hashleme, RBAC (Role-Based Access Control)
-- **QR Kod Servisi:** `qrcode` (otomatik benzersiz veri yükü ve PNG üretimi)
-- **Frontend:** React 18, TypeScript, Vite
-- **Stil & Tasarım Sistemi:** Özel **Vanilla CSS** (Kurallara uygun, Tailwind olmadan saf CSS değişkenleri, cam efekti/glassmorphism, mobil öncelikli responsive grid)
-- **Kamera / Saha QR Tarama:** `html5-qrcode`
-- **İkonografi:** `lucide-react`
-- **DevOps:** Docker, Dockerfile (Multi-stage build), Docker Compose
+| Katman | Teknoloji / Kütüphane | Açıklama |
+| :--- | :--- | :--- |
+| **Backend** | **Node.js, Express.js, TypeScript** | Tip güvenli, katmanlı RESTful API mimarisi |
+| **Veritabanı & ORM** | **PostgreSQL 15, Prisma ORM** | İlişkisel veri modeli, otomatik migration ve seed |
+| **Güvenlik & Auth** | **JWT (JSON Web Token), bcryptjs** | Rol Bazlı Yetkilendirme (RBAC: `ADMIN`, `STAFF`) |
+| **Barkod & QR** | **qrcode (Base64 DataURL / SVG)** | Otomatik etiket üretimi ve anlık QR çözümleme |
+| **Frontend** | **React 18, Vite, TypeScript** | Hızlı, tip güvenli modern reaktif arayüz |
+| **Stil & Tasarım** | **Tailwind CSS** | TOGU kurumsal koyu lacivert/gri yönetici teması |
+| **İkonografi & UX** | **Lucide Icons, react-hot-toast** | Profesyonel görsel bileşenler ve anlık geri bildirimler |
+| **İstemci** | **Axios (Interceptors)** | Otomatik JWT taşıyıcı ve hata yakalama katmanı |
+| **DevOps** | **Docker, Docker Compose, Nginx** | Tek tıkla veritabanı, backend ve frontend kurulumu |
 
 ---
 
-## 👥 Demo Kullanıcı Hesapları
+## 🚀 Hızlı Başlangıç & Kurulum
 
-Değerlendirme sürecini kolaylaştırmak adına sisteme giriş ekranında tek tıkla oturum açma butonları eklenmiştir:
-
-| Rol | E-Posta | Şifre | Departman |
-|---|---|---|---|
-| **Yönetici (Admin)** | `admin@kurum.gov.tr` | `Admin123!` | Bilgi İşlem ve Dijital Dönüşüm |
-| **Standart Personel** | `ahmet.yilmaz@kurum.gov.tr` | `Personel123!` | Yazılım ve Yapay Zeka |
-| **Standart Personel** | `ayse.demir@kurum.gov.tr` | `Personel123!` | Veri Analitiği ve İş Zekası |
-| **Standart Personel** | `mehmet.kaya@kurum.gov.tr` | `Personel123!` | Sistem ve Ağ Güvenliği |
-
----
-
-## 🚀 Kurulum ve Çalıştırma
-
-### Yöntem 1: Docker Compose ile Tek Tuşla Çalıştırma (Önerilen)
-
-Docker kurulu olan sisteminizde projenin kök dizininde şu komutu çalıştırmanız yeterlidir:
+### Yöntem 1: Docker Compose ile Tek Tıkla Kurulum (Önerilen)
+Sistemde Docker ve Docker Compose kurulu ise, tüm servisleri (PostgreSQL, Backend ve Frontend) tek bir komutla ayağa kaldırabilirsiniz:
 
 ```bash
-docker compose up --build
+# Projeyi derleyin ve tüm konteynerleri başlatın
+docker-compose up --build
 ```
 
-- **Web Arayüzü:** [http://localhost:3000](http://localhost:3000)
-- **Backend API:** [http://localhost:5000](http://localhost:5000)
-- **API Sağlık Kontrolü:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
+Konteynerler ayağa kalktığında:
+1. `postgres` (Port 5432) sağlık kontrolü (healthcheck) tamamlanır.
+2. `backend` (Port 5000) otomatik olarak `npx prisma db push` ve `npx prisma db seed` komutlarını çalıştırarak tabloları ve test verilerini yükler.
+3. `frontend` (Port 3000) Nginx üzerinden derlenmiş olarak yayına başlar.
+
+- **Frontend Arayüzü:** [http://localhost:3000](http://localhost:3000)
+- **Backend REST API:** [http://localhost:5000/api](http://localhost:5000/api)
+- **API Sağlık Testi:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
 
 ---
 
-### Yöntem 2: Lokal Geliştirme Ortamı Kurulumu
-
-Gereksinimler: Node.js (v18+) ve npm.
+### Yöntem 2: Manuel Geliştirme Ortamı (Local Dev)
 
 #### 1. Backend Kurulumu:
 ```bash
 cd backend
-
-# Bağımlılıkları yükleyin
 npm install
-
-# Veritabanını oluşturun ve şemayı uygulayın
+npx prisma generate
 npx prisma db push
-
-# Demo verileri (Admin, personel, kategoriler, cihazlar, zimmet logları) yükleyin
 npm run prisma:seed
-
-# Backend sunucusunu geliştirici modunda başlatın
 npm run dev
+# Backend http://localhost:5000 adresinde dinlemeye başlar
 ```
-Backend `http://localhost:5000` portunda çalışacaktır.
 
 #### 2. Frontend Kurulumu:
-Ayrı bir terminal penceresinde:
 ```bash
 cd frontend
-
-# Bağımlılıkları yükleyin
 npm install
-
-# Vite geliştirici sunucusunu başlatın
 npm run dev
-```
-Frontend `http://localhost:5173` portunda çalışacaktır.
-
----
-
-## ⚙️ Ortam Değişkenleri (.env)
-
-`backend/.env.example` dosyası aşağıdaki değişkenleri içerir:
-
-```env
-PORT=5000
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="kurum-it-secret-super-secure-key-2026"
-CORS_ORIGIN="http://localhost:5173"
+# Frontend http://localhost:5173 adresinde açılır
 ```
 
 ---
 
-## 📡 REST API Uç Noktaları Özeti
+## 🔑 Varsayılan Test Giriş Bilgileri
 
-### Kimlik Doğrulama & Profil (`/api/auth`)
-- `POST /api/auth/login` — E-posta ve şifre ile giriş (JWT token döner)
-- `GET /api/auth/me` — Giriş yapmış kullanıcının profil detayları
-- `PUT /api/auth/change-password` — Kendi şifresini değiştirme
+Jüri ve değerlendirme heyetinin hızlıca test yapabilmesi için giriş sayfasında **tek tıkla doldurma butonları** bulunmaktadır:
 
-### Demirbaş Yönetimi (`/api/assets`)
-- `GET /api/assets` — Sayfalama, arama ve durum/kategori/departman filtreli cihaz listesi
-- `GET /api/assets/:id` — Demirbaş detayları ve QR kod görseli
-- `POST /api/assets` — Yeni demirbaş ekleme (Admin)
-- `PUT /api/assets/:id` — Demirbaş bilgilerini güncelleme (Admin)
-- `DELETE /api/assets/:id` — Demirbaş silme (Zimmette değilse) (Admin)
-
-### Zimmet & Denetim Tarihçesi (`/api/custody`)
-- `POST /api/custody/assign` — Personele cihaz teslimi / zimmetleme
-- `POST /api/custody/return` — Zimmetten iade alma
-- `POST /api/custody/report-fault` — Arıza bildirme ve teknik servise sevk
-- `GET /api/custody/logs` — Tüm zimmet hareketleri ve denetim logları
-- `GET /api/custody/my-assets` — Personelin kendi üzerine kayıtlı cihazları
-
-### Gösterge Paneli (`/api/dashboard`)
-- `GET /api/dashboard/stats` — Toplam sayaçlar, kategori dağılımı, son hareketler
-
-### Saha & QR Yönetimi (`/api/qr`)
-- `GET /api/qr/lookup/:query` — QR, seri no veya barkod ile anında cihaz sorgulama
-- `POST /api/qr/quick-action` — Sahada hızlı işlem (Teslim Et, Geri Al, Arıza Bildir)
-
-### Kullanıcı Yönetimi (`/api/users`)
-- `GET /api/users` — Kullanıcı listesi
-- `POST /api/users` — Yeni kullanıcı oluşturma (Admin)
-- `PUT /api/users/:id` — Kullanıcı güncelleme (Admin)
-- `PUT /api/users/:id/reset-password` — Kullanıcı şifresi sıfırlama (Admin)
-- `DELETE /api/users/:id` — Kullanıcı silme (Admin)
+| Rol | E-Posta | Şifre | Yetkiler |
+| :--- | :--- | :--- | :--- |
+| **Yönetici (Admin)** | `admin@gop.edu.tr` | `admin123` | Tüm demirbaş CRUD, QR basma, personele zimmetleme, iade alma, kullanıcı yönetimi |
+| **Personel (Staff)** | `personel@gop.edu.tr` | `personel123` | Envanter listeleme, QR görüntüleme, cihaz detayları ve zimmet geçmişini inceleme |
+| **Personel (Staff - 2)** | `mehmet.kaya@gop.edu.tr` | `personel123` | Envanter listeleme ve zimmet geçmişi inceleme |
 
 ---
 
-## 📄 Lisans ve Teslimat
-Bu proje, **T.C. Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü Aday Mühendis Değerlendirme Projesi** için hazırlanmıştır.
-Tüm hakları saklıdır.
+## 📡 RESTful API Uç Noktaları Tablosu
+
+| Metot | Uç Nokta | Açıklama | Yetki Gereksinimi |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | E-posta ve şifre ile giriş yapar, JWT token döner | Herkese Açık |
+| `POST` | `/api/auth/register` | Yeni personel kaydeder | Yalnızca `ADMIN` |
+| `GET` | `/api/auth/me` | Oturum açan kullanıcının profil ve zimmet bilgilerini döner | `ADMIN` / `STAFF` |
+| `GET` | `/api/assets` | Demirbaşları listeler (`page`, `limit`, `search`, `status`, `department`) | `ADMIN` / `STAFF` |
+| `POST` | `/api/assets` | Yeni demirbaş ekler, **otomatik Base64 QR kodu üretir** | Yalnızca `ADMIN` |
+| `GET` | `/api/assets/:id` | Cihaz detayı, zimmetli personel ve geçmiş denetim izini döner | `ADMIN` / `STAFF` |
+| `GET` | `/api/assets/qr/:assetTag` | QR barkod etiketi (`assetTag`) ile cihaz sorgular | `ADMIN` / `STAFF` |
+| `PUT` | `/api/assets/:id` | Demirbaş bilgilerini günceller (durum değişirse log atar) | Yalnızca `ADMIN` |
+| `DELETE` | `/api/assets/:id` | Demirbaş kaydını siler (aktif zimmette ise engellenir) | Yalnızca `ADMIN` |
+| `POST` | `/api/assets/:id/assign` | Cihazı personele zimmetler (Durum: `ACTIVE`, log kaydı atılır) | Yalnızca `ADMIN` |
+| `POST` | `/api/assets/:id/return` | Cihazı personelden iade alır (Durum: `IN_STOCK`, log kaydı atılır) | Yalnızca `ADMIN` |
+| `GET` | `/api/assets/:id/history` | Demirbaşın tüm zimmet/iade/durum geçmişi zaman çizelgesini döner | `ADMIN` / `STAFF` |
+| `GET` | `/api/dashboard/stats` | Toplam, zimmetli, depoda, arızalı sayıları, son 5 hareket ve departman dağılımı | `ADMIN` / `STAFF` |
+| `GET` | `/api/users` | Personel listesini üzerlerindeki zimmetli cihaz sayılarıyla döner | `ADMIN` / `STAFF` |
+| `PUT` | `/api/users/:id` | Personel bilgilerini ve rolünü günceller | Yalnızca `ADMIN` |
+| `DELETE` | `/api/users/:id` | Personeli siler (üzerinde aktif zimmet varsa engellenir) | Yalnızca `ADMIN` |
+| `GET` | `/api/health` | PostgreSQL ve API servis canlılık sağlık testi | Herkese Açık |
+
+---
+
+## 🗄️ Veritabanı Modelleri ve İlişki Şeması (Prisma)
+
+```mermaid
+erDiagram
+    USER ||--o{ ASSET : "zimmetli_cihazlar"
+    USER ||--o{ ASSIGNMENT_HISTORY : "gecmis_hareketler"
+    ASSET ||--o{ ASSIGNMENT_HISTORY : "denetim_izleri"
+
+    USER {
+        string id PK "UUID"
+        string email UK
+        string passwordHash
+        string fullName
+        string department
+        Role role "ADMIN | STAFF"
+        datetime createdAt
+    }
+
+    ASSET {
+        string id PK "UUID"
+        string assetTag UK "TOGU-2026-001"
+        string name
+        string brand
+        string model
+        string serialNumber UK
+        datetime purchaseDate
+        AssetStatus status "ACTIVE | IN_STOCK | IN_REPAIR | SCRAPPED"
+        string qrCode "Base64 DataURL"
+        string assignedToUserId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    ASSIGNMENT_HISTORY {
+        string id PK "UUID"
+        string assetId FK
+        string userId FK
+        AssignmentAction action "ASSIGN | RETURN | STATUS_CHANGE"
+        string notes
+        datetime createdAt
+    }
+```
+
+---
+
+## 🖼️ Ekran Görüntüleri ve Arayüz Önizlemeleri
+
+### 1. Yönetici Gösterge Paneli (Dashboard)
+Üstte 4 istatistik kartı, departman dağılım çubukları ve anlık denetim hareketleri:
+![Dashboard](docs/dashboard.png)
+
+### 2. Demirbaş Envanteri ve Durum Filtreleri
+Anlık arama, durum rozetleri, sayfalama ve hızlı zimmetleme butonları:
+![Demirbaş Listesi](docs/assets.png)
+
+### 3. QR Kod Etiket Modalı ve Yazdırma Önizlemesi
+Kurumsal TOGU logolu, yazdırmaya ve PNG indirmeye hazır QR kartı:
+![QR Modal](docs/qr-modal.png)
+
+---
+
+## 🌟 Öne Çıkan Mühendislik Prensipleri
+1. **Clean Architecture & Katmanlı Yapı:** Kontrolcüler (`controllers`), iş servisleri (`services`), doğrulama ara yazılımları (`middlewares`) ve rotalar (`routes`) birbirinden net biçimde ayrıştırılmıştır.
+2. **Otomatik QR Üretimi:** Her yeni donanım kaydında `qrcode` kütüphanesiyle yüksek çözünürlüklü ve hataya dayanıklı (`Level H`) Base64 Data URL doğrudan oluşturulup `Asset.qrCode` alanına işlenir.
+3. **Denetim İzi (Audit Trail):** Hiçbir zimmet atama, iade veya donanım durum değişikliği loglanmadan geçmez; `AssignmentHistory` tablosu üzerinde zaman çizelgesi olarak kronolojik olarak tutulur.
+4. **Tip Güvenliği (Full Type-Safety):** Backend TypeScript modelleri ve Prisma Client ile %100 tip güvenliği, Frontend ise katı TypeScript arabirimleriyle korunmaktadır.
+5. **Modern Kurumsal UI/UX:** Tailwind CSS ile Tokat Gaziosmanpaşa Üniversitesi kurumsal renklerine uygun koyu lacivert ve gri tonlar, mobil uyumlu hamburger menü ve `react-hot-toast` etkileşimleri.
+
+---
+
+> **Telif & Lisans:** Bu proje, Tokat Gaziosmanpaşa Üniversitesi Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü "Aday Mühendis Değerlendirmesi" amacıyla **Işıl Cüre** tarafından sıfırdan geliştirilmiştir.

@@ -1,439 +1,339 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { Modal } from '../components/Modal';
-import { Pagination } from '../components/Pagination';
-import { QrCardModal } from '../components/QrCardModal';
+import React, { useState, useEffect } from 'react';
+import { assetApi } from '../services/api';
+import { Asset, AssetStatus, Pagination } from '../types';
+import { QrModal } from '../components/QrModal';
+import { AssignModal } from '../components/AssignModal';
 import {
-  Boxes,
   Search,
-  Filter,
   Plus,
   QrCode,
-  Edit2,
-  Trash2,
-  Eye,
-  CheckCircle,
-  AlertTriangle,
-  RotateCcw,
   UserCheck,
-  Calendar,
-  Building,
+  ArrowDownLeft,
+  Eye,
+  Trash2,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  CheckCircle2,
+  Warehouse,
+  AlertTriangle,
   Tag,
-  Hash
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-export const AssetsPage: React.FC = () => {
-  const { isAdmin } = useAuth();
-  const { showToast } = useToast();
+interface AssetsPageProps {
+  initialStatusFilter?: string;
+  onOpenAddModal: () => void;
+  onSelectAssetDetail: (assetId: string) => void;
+  isAdmin: boolean;
+}
 
-  const [assets, setAssets] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+export const AssetsPage: React.FC<AssetsPageProps> = ({
+  initialStatusFilter = '',
+  onOpenAddModal,
+  onSelectAssetDetail,
+  isAdmin,
+}) => {
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filtreler & Sayfalama
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
-  const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-
-  // Modallar
-  const [selectedAssetForQr, setSelectedAssetForQr] = useState<any | null>(null);
-  const [detailModalAsset, setDetailModalAsset] = useState<any | null>(null);
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingAsset, setEditingAsset] = useState<any | null>(null);
-
-  // Zimmetleme Hızlı Modalı
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [assigningAsset, setAssigningAsset] = useState<any | null>(null);
-  const [assignUserId, setAssignUserId] = useState('');
-  const [assignNotes, setAssignNotes] = useState('');
-
-  // Form State
-  const [formData, setFormData] = useState({
-    brand: '',
-    model: '',
-    serialNumber: '',
-    categoryId: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
-    warrantyEndDate: '',
-    location: 'Merkez IT Depo',
-    cost: '',
-    notes: '',
-    status: 'AVAILABLE',
+  const [pagination, setPagination] = useState<Pagination>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
   });
 
-  const fetchCategoriesAndUsers = async () => {
-    try {
-      const [cats, userList] = await Promise.all([api.getCategories(), api.getUsers()]);
-      setCategories(cats);
-      setUsers(userList);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Modal Durumları
+  const [selectedQrAsset, setSelectedQrAsset] = useState<Asset | null>(null);
+  const [selectedAssignAsset, setSelectedAssignAsset] = useState<Asset | null>(null);
 
-  const fetchAssets = useCallback(async () => {
+  useEffect(() => {
+    loadAssets();
+  }, [page, statusFilter]);
+
+  const loadAssets = async (searchQuery?: string) => {
     try {
       setLoading(true);
-      const res = await api.getAssets({
+      const q = searchQuery !== undefined ? searchQuery : search;
+      const res = await assetApi.getAll({
         page,
         limit: 10,
-        search,
-        status: statusFilter,
-        categoryId: categoryFilter,
-        department: departmentFilter,
+        search: q.trim() || undefined,
+        status: statusFilter ? (statusFilter as AssetStatus) : undefined,
       });
-      setAssets(res.data);
-      setTotalPages(res.pagination.totalPages);
-      setTotalItems(res.pagination.total);
+
+      if (res.success) {
+        setAssets(res.data);
+        setPagination(res.pagination);
+      }
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error('Demirbaş listesi yüklenirken hata oluştu.');
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, categoryFilter, departmentFilter]);
-
-  useEffect(() => {
-    fetchCategoriesAndUsers();
-  }, []);
-
-  useEffect(() => {
-    fetchAssets();
-  }, [fetchAssets]);
-
-  const handleOpenAdd = () => {
-    setEditingAsset(null);
-    setFormData({
-      brand: '',
-      model: '',
-      serialNumber: '',
-      categoryId: categories[0]?.id || '',
-      purchaseDate: new Date().toISOString().split('T')[0],
-      warrantyEndDate: '',
-      location: 'Merkez IT Depo',
-      cost: '',
-      notes: '',
-      status: 'AVAILABLE',
-    });
-    setIsFormModalOpen(true);
   };
 
-  const handleOpenEdit = (asset: any) => {
-    setEditingAsset(asset);
-    setFormData({
-      brand: asset.brand,
-      model: asset.model,
-      serialNumber: asset.serialNumber,
-      categoryId: asset.categoryId,
-      purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
-      warrantyEndDate: asset.warrantyEndDate ? new Date(asset.warrantyEndDate).toISOString().split('T')[0] : '',
-      location: asset.location || '',
-      cost: asset.cost ? String(asset.cost) : '',
-      notes: asset.notes || '',
-      status: asset.status,
-    });
-    setIsFormModalOpen(true);
-  };
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setPage(1);
+    loadAssets(search);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(status);
+    setPage(1);
+  };
+
+  const handleDeleteAsset = async (asset: Asset) => {
+    if (!window.confirm(`"${asset.assetTag} - ${asset.name}" demirbaşını silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
     try {
-      if (editingAsset) {
-        await api.updateAsset(editingAsset.id, formData);
-        showToast('Demirbaş bilgileri güncellendi.', 'success');
-      } else {
-        const res = await api.createAsset(formData);
-        showToast(`${res.asset.brand} ${res.asset.model} başarıyla kaydedildi.`, 'success');
-      }
-      setIsFormModalOpen(false);
-      fetchAssets();
+      await assetApi.delete(asset.id);
+      toast.success(`${asset.assetTag} başarıyla silindi.`);
+      loadAssets();
     } catch (err: any) {
-      showToast(err.message, 'error');
+      toast.error(err.response?.data?.message || 'Demirbaş silinemedi.');
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`"${name}" adlı demirbaşı silmek istediğinize emin misiniz?`)) return;
-    try {
-      await api.deleteAsset(id);
-      showToast('Demirbaş kaydı silindi.', 'success');
-      fetchAssets();
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
-  };
-
-  const handleOpenAssign = (asset: any) => {
-    setAssigningAsset(asset);
-    setAssignUserId(users[0]?.id || '');
-    setAssignNotes('');
-    setIsAssignModalOpen(true);
-  };
-
-  const handleAssignSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!assigningAsset || !assignUserId) return;
-    try {
-      await api.assignAsset({
-        assetId: assigningAsset.id,
-        userId: assignUserId,
-        notes: assignNotes,
-      });
-      showToast('Demirbaş başarıyla personele zimmetlendi.', 'success');
-      setIsAssignModalOpen(false);
-      fetchAssets();
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
-  };
-
-  const handleReturn = async (asset: any) => {
-    if (!window.confirm(`${asset.brand} ${asset.model} cihazını ${asset.currentUser?.fullName || 'personel'} üzerinden iade almak istiyor musunuz?`)) return;
-    try {
-      await api.returnAsset({ assetId: asset.id });
-      showToast('Cihaz başarıyla depoya iade alındı.', 'success');
-      fetchAssets();
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
-  };
-
-  const handleShowQr = async (asset: any) => {
-    try {
-      const full = await api.getAsset(asset.id);
-      setSelectedAssetForQr(full);
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: AssetStatus) => {
     switch (status) {
-      case 'AVAILABLE':
-        return <span className="badge badge-available">Depoda / Kullanılabilir</span>;
-      case 'ASSIGNED':
-        return <span className="badge badge-assigned">Zimmetli</span>;
+      case 'ACTIVE':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Aktif Zimmetli
+          </span>
+        );
+      case 'IN_STOCK':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+            <Warehouse className="w-3 h-3" />
+            Depoda / Boşta
+          </span>
+        );
       case 'IN_REPAIR':
-        return <span className="badge badge-repair">Arızalı / Bakımda</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <AlertTriangle className="w-3 h-3" />
+            Arızalı / Bakımda
+          </span>
+        );
       case 'SCRAPPED':
-        return <span className="badge badge-scrapped">Hurda / Hizmet Dışı</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">
+            Hurda
+          </span>
+        );
       default:
-        return <span className="badge badge-neutral">{status}</span>;
+        return null;
     }
   };
 
   return (
-    <div>
-      {/* Search & Filter Toolbar */}
-      <div
-        className="card"
-        style={{
-          padding: '1.25rem',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
-          {/* Arama Inputu */}
-          <div style={{ flex: '1 1 280px', position: 'relative' }}>
-            <Search size={18} color="#64748b" style={{ position: 'absolute', left: 14, top: 12 }} />
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Marka, Model, Seri No, Demirbaş Kodu veya Konum ara..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              style={{ paddingLeft: '2.5rem' }}
-              id="input-asset-search"
-            />
-          </div>
+    <div className="space-y-6">
+      {/* Üst Başlık ve Aksiyon Barı */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-md">
+        <div>
+          <h2 className="text-xl font-black text-white tracking-tight">Demirbaş Envanteri</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Toplam {pagination.total} kayıtlı demirbaş varlığı listeleniyor
+          </p>
+        </div>
 
-          {/* Durum Filtresi */}
-          <div style={{ minWidth: 170 }}>
-            <select
-              className="form-control"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              id="select-status-filter"
-            >
-              <option value="ALL">Tüm Durumlar</option>
-              <option value="AVAILABLE">Depoda (Kullanılabilir)</option>
-              <option value="ASSIGNED">Zimmetli</option>
-              <option value="IN_REPAIR">Arızalı / Bakımda</option>
-              <option value="SCRAPPED">Hurda</option>
-            </select>
-          </div>
-
-          {/* Kategori Filtresi */}
-          <div style={{ minWidth: 170 }}>
-            <select
-              className="form-control"
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setPage(1);
-              }}
-              id="select-category-filter"
-            >
-              <option value="ALL">Tüm Kategoriler</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Yeni Demirbaş Butonu */}
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <button
+            onClick={() => loadAssets()}
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title="Listeyi Yenile"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
           {isAdmin && (
-            <button className="btn btn-primary" onClick={handleOpenAdd} id="btn-add-asset-page">
-              <Plus size={18} />
-              <span>Yeni Cihaz Ekle</span>
+            <button
+              onClick={onOpenAddModal}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Yeni Demirbaş Ekle</span>
             </button>
           )}
         </div>
       </div>
 
+      {/* Arama ve Filtreleme Şeridi */}
+      <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Durum Filtre Tabları */}
+        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+          {[
+            { id: '', label: 'Tümü' },
+            { id: 'ACTIVE', label: 'Zimmetli' },
+            { id: 'IN_STOCK', label: 'Depoda' },
+            { id: 'IN_REPAIR', label: 'Arızalı' },
+            { id: 'SCRAPPED', label: 'Hurda' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleStatusChange(tab.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                statusFilter === tab.id
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Anlık Arama Formu */}
+        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
+          <input
+            type="text"
+            placeholder="Etiket, seri no, marka, model veya personel..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+        </form>
+      </div>
+
       {/* Demirbaş Tablosu */}
-      <div className="card">
-        <div className="table-container">
-          <table className="data-table">
+      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr>
-                <th>Demirbaş Kodu</th>
-                <th>Cihaz / Model</th>
-                <th>Kategori</th>
-                <th>Seri No</th>
-                <th>Durum</th>
-                <th>Zimmetli Personel</th>
-                <th>Konum</th>
-                <th style={{ textAlign: 'right' }}>İşlemler</th>
+              <tr className="border-b border-slate-800 bg-slate-950/40 text-slate-400 uppercase tracking-wider font-semibold">
+                <th className="py-4 pl-6">Barkod / Etiket</th>
+                <th className="py-4">Demirbaş Adı</th>
+                <th className="py-4">Marka & Model</th>
+                <th className="py-4">Seri Numarası (S/N)</th>
+                <th className="py-4">Durum</th>
+                <th className="py-4">Zimmetli Personel</th>
+                <th className="py-4 pr-6 text-right">İşlemler</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-800/60">
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                    Yükleniyor...
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-500 mb-2" />
+                    Demirbaş kayıtları taranıyor...
                   </td>
                 </tr>
               ) : assets.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                    Kriterlere uygun demirbaş kaydı bulunamadı.
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    Arama kriterlerine uygun demirbaş kaydı bulunamadı.
                   </td>
                 </tr>
               ) : (
                 assets.map((asset) => (
-                  <tr key={asset.id}>
-                    <td>
-                      <span className="tag-code">{asset.assetTag}</span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>
-                        {asset.brand} {asset.model}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        Alım: {new Date(asset.purchaseDate).toLocaleDateString('tr-TR')}
+                  <tr key={asset.id} className="hover:bg-slate-800/30 transition-colors group">
+                    {/* Etiket Kodu */}
+                    <td className="py-4 pl-6">
+                      <div className="inline-flex items-center gap-1.5 bg-blue-950/60 border border-blue-800/40 text-blue-300 px-2.5 py-1 rounded-lg font-mono font-bold text-xs">
+                        <Tag className="w-3 h-3 text-blue-400" />
+                        <span>{asset.assetTag}</span>
                       </div>
                     </td>
-                    <td>
-                      <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
-                        {asset.category?.name}
-                      </span>
+
+                    {/* Demirbaş Adı */}
+                    <td className="py-4 font-semibold text-white max-w-[200px]">
+                      <button
+                        onClick={() => onSelectAssetDetail(asset.id)}
+                        className="hover:text-blue-400 text-left transition-colors truncate block w-full"
+                        title={asset.name}
+                      >
+                        {asset.name}
+                      </button>
                     </td>
-                    <td>
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#94a3b8' }}>
-                        {asset.serialNumber}
-                      </span>
+
+                    {/* Marka & Model */}
+                    <td className="py-4 text-slate-300">
+                      <div>{asset.brand}</div>
+                      <div className="text-[11px] text-slate-400">{asset.model}</div>
                     </td>
-                    <td>{getStatusBadge(asset.status)}</td>
-                    <td>
-                      {asset.currentUser ? (
+
+                    {/* Seri No */}
+                    <td className="py-4 font-mono text-slate-400 text-[11px]">
+                      {asset.serialNumber}
+                    </td>
+
+                    {/* Durum Rozeti */}
+                    <td className="py-4">{getStatusBadge(asset.status)}</td>
+
+                    {/* Zimmetli Personel */}
+                    <td className="py-4">
+                      {asset.assignedToUser ? (
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#60a5fa' }}>
-                            {asset.currentUser.fullName}
+                          <div className="font-semibold text-slate-200">
+                            {asset.assignedToUser.fullName}
                           </div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                            {asset.currentUser.department}
+                          <div className="text-[10px] text-slate-400">
+                            {asset.assignedToUser.department}
                           </div>
                         </div>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.82rem' }}>—</span>
+                        <span className="text-slate-400 italic text-[11px]">Merkez Depo</span>
                       )}
                     </td>
-                    <td style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                      {asset.location || 'Merkez Depo'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                        {/* QR Etiketi Görüntüle / Yazdır */}
+
+                    {/* Eylem Butonları */}
+                    <td className="py-4 pr-6 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {/* QR Modal Butonu */}
                         <button
-                          className="btn btn-secondary btn-sm"
-                          title="QR Kod / Barkod Etiketi"
-                          onClick={() => handleShowQr(asset)}
+                          onClick={() => setSelectedQrAsset(asset)}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-blue-600/30 text-blue-400 hover:text-white border border-slate-700/60 hover:border-blue-500/40 transition-colors"
+                          title="QR Kodunu Görüntüle & Yazdır"
                         >
-                          <QrCode size={14} />
+                          <QrCode className="w-4 h-4" />
                         </button>
 
-                        {/* Zimmet İşlemi Kısayolu (Admin) */}
-                        {isAdmin && asset.status === 'AVAILABLE' && (
+                        {/* Zimmetle / İade Al (Admin) */}
+                        {isAdmin && asset.status !== 'SCRAPPED' && (
                           <button
-                            className="btn btn-primary btn-sm"
-                            title="Personele Zimmetle"
-                            onClick={() => handleOpenAssign(asset)}
+                            onClick={() => setSelectedAssignAsset(asset)}
+                            className={`p-1.5 rounded-lg text-white border transition-colors ${
+                              asset.status === 'ACTIVE'
+                                ? 'bg-amber-900/30 hover:bg-amber-800/60 text-amber-300 border-amber-800/40'
+                                : 'bg-emerald-900/30 hover:bg-emerald-800/60 text-emerald-300 border-emerald-800/40'
+                            }`}
+                            title={asset.status === 'ACTIVE' ? 'Depoya İade Al' : 'Personele Zimmetle'}
                           >
-                            <UserCheck size={14} />
-                            <span>Zimmetle</span>
+                            {asset.status === 'ACTIVE' ? (
+                              <ArrowDownLeft className="w-4 h-4" />
+                            ) : (
+                              <UserCheck className="w-4 h-4" />
+                            )}
                           </button>
                         )}
 
-                        {isAdmin && asset.status === 'ASSIGNED' && (
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
-                            title="Zimmetten İade Al"
-                            onClick={() => handleReturn(asset)}
-                          >
-                            <RotateCcw size={14} />
-                            <span>İade Al</span>
-                          </button>
-                        )}
+                        {/* Detay & Timeline Butonu */}
+                        <button
+                          onClick={() => onSelectAssetDetail(asset.id)}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-colors"
+                          title="Cihaz Künyesi & Zimmet Zaman Çizelgesi"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
 
-                        {/* Düzenle */}
+                        {/* Sil (Admin) */}
                         {isAdmin && (
                           <button
-                            className="btn btn-outline btn-sm"
-                            title="Düzenle"
-                            onClick={() => handleOpenEdit(asset)}
+                            onClick={() => handleDeleteAsset(asset)}
+                            className="p-1.5 rounded-lg bg-red-950/30 hover:bg-red-900/60 text-red-400 hover:text-white border border-red-800/40 transition-colors"
+                            title="Demirbaşı Sil"
                           >
-                            <Edit2 size={14} />
-                          </button>
-                        )}
-
-                        {/* Sil */}
-                        {isAdmin && asset.status !== 'ASSIGNED' && (
-                          <button
-                            className="btn btn-outline btn-sm"
-                            style={{ color: '#ef4444' }}
-                            title="Sil"
-                            onClick={() => handleDelete(asset.id, `${asset.brand} ${asset.model}`)}
-                          >
-                            <Trash2 size={14} />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>
@@ -445,235 +345,48 @@ export const AssetsPage: React.FC = () => {
           </table>
         </div>
 
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={10}
-          onPageChange={setPage}
-        />
+        {/* Sayfalama (Pagination Bar) */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-950/30 text-xs text-slate-400">
+          <div>
+            Sayfa <span className="font-bold text-white">{pagination.page}</span> / {pagination.totalPages || 1} (Toplam {pagination.total} Cihaz)
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="font-mono text-slate-300 px-2 font-bold">{page}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+              disabled={page >= pagination.totalPages}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Demirbaş Ekle / Düzenle Modal */}
-      <Modal
-        isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
-        title={editingAsset ? 'Demirbaş Bilgilerini Düzenle' : 'Yeni Demirbaş Kaydı'}
-        icon={<Boxes size={20} color="#3b82f6" />}
-        footer={
-          <>
-            <button className="btn btn-outline" onClick={() => setIsFormModalOpen(false)}>
-              İptal
-            </button>
-            <button className="btn btn-primary" onClick={handleFormSubmit}>
-              {editingAsset ? 'Güncelle' : 'Kaydet ve QR Üret'}
-            </button>
-          </>
-        }
-      >
-        <form onSubmit={handleFormSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Marka *</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Örn: Apple, Dell, Lenovo"
-                value={formData.brand}
-                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Model *</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Örn: MacBook Pro 16 M3"
-                value={formData.model}
-                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+      {/* QR Modalı */}
+      {selectedQrAsset && (
+        <QrModal
+          asset={selectedQrAsset}
+          onClose={() => setSelectedQrAsset(null)}
+        />
+      )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Seri Numarası *</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Örn: C02G90XXMD6M"
-                value={formData.serialNumber}
-                onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Kategori *</label>
-              <select
-                className="form-control"
-                value={formData.categoryId}
-                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                required
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Alım Tarihi *</label>
-              <input
-                type="date"
-                className="form-control"
-                value={formData.purchaseDate}
-                onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Garanti Bitiş Tarihi</label>
-              <input
-                type="date"
-                className="form-control"
-                value={formData.warrantyEndDate}
-                onChange={(e) => setFormData({ ...formData, warrantyEndDate: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label className="form-label">Depo / Konum</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Örn: Merkez Depo - Raf A1"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Alım Bedeli (₺)</label>
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Örn: 45000"
-                value={formData.cost}
-                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {editingAsset && (
-            <div className="form-group">
-              <label className="form-label">Cihaz Durumu</label>
-              <select
-                className="form-control"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              >
-                <option value="AVAILABLE">Depoda (Kullanılabilir)</option>
-                <option value="ASSIGNED">Zimmetli</option>
-                <option value="IN_REPAIR">Arızalı / Bakımda</option>
-                <option value="SCRAPPED">Hurda / Hizmet Dışı</option>
-              </select>
-            </div>
-          )}
-
-          <div className="form-group">
-            <label className="form-label">Notlar ve Donanım Detayı</label>
-            <textarea
-              className="form-control"
-              rows={2}
-              placeholder="İşlemci, RAM, SSD veya özel tahsis notları..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
-          </div>
-        </form>
-      </Modal>
-
-      {/* Personele Zimmetleme Hızlı Modalı */}
-      <Modal
-        isOpen={isAssignModalOpen}
-        onClose={() => setIsAssignModalOpen(false)}
-        title="Personele Cihaz Zimmetleme"
-        icon={<UserCheck size={20} color="#34d399" />}
-        maxWidth="500px"
-        footer={
-          <>
-            <button className="btn btn-outline" onClick={() => setIsAssignModalOpen(false)}>
-              İptal
-            </button>
-            <button className="btn btn-success" onClick={handleAssignSubmit}>
-              Zimmeti Onayla
-            </button>
-          </>
-        }
-      >
-        {assigningAsset && (
-          <form onSubmit={handleAssignSubmit}>
-            <div
-              style={{
-                background: 'rgba(59, 130, 246, 0.08)',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-                borderRadius: 12,
-                padding: '1rem',
-                marginBottom: '1.25rem',
-              }}
-            >
-              <div style={{ fontSize: '0.8rem', color: '#93c5fd', fontWeight: 600 }}>Seçilen Cihaz:</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
-                {assigningAsset.brand} {assigningAsset.model}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                Etiket: {assigningAsset.assetTag} | Seri No: {assigningAsset.serialNumber}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Teslim Edilecek Personel *</label>
-              <select
-                className="form-control"
-                value={assignUserId}
-                onChange={(e) => setAssignUserId(e.target.value)}
-                required
-              >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName} ({u.department})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Zimmet Notu / Tutanak Açıklaması</label>
-              <textarea
-                className="form-control"
-                rows={3}
-                placeholder="Teslim sebebi, çalışma birimi, çanta/şarj cihazı aksesuarları vb."
-                value={assignNotes}
-                onChange={(e) => setAssignNotes(e.target.value)}
-              />
-            </div>
-          </form>
-        )}
-      </Modal>
-
-      {/* QR Etiket Yazdırma Modalı */}
-      <QrCardModal
-        isOpen={!!selectedAssetForQr}
-        onClose={() => setSelectedAssetForQr(null)}
-        asset={selectedAssetForQr}
-      />
+      {/* Zimmetleme / İade Modalı */}
+      {selectedAssignAsset && (
+        <AssignModal
+          asset={selectedAssignAsset}
+          onClose={() => setSelectedAssignAsset(null)}
+          onSuccess={() => loadAssets()}
+        />
+      )}
     </div>
   );
 };

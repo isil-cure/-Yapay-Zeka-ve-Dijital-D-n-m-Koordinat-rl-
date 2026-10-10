@@ -1,149 +1,123 @@
 import React from 'react';
-import {
-  LayoutDashboard,
-  Boxes,
-  FileCheck2,
-  Users,
-  QrCode,
-  ShieldCheck,
-  LogOut,
-  FolderLock,
-  X
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { User } from '../types';
+import { LayoutDashboard, Layers, Users, QrCode, ShieldCheck, Heart, ExternalLink, X } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
-  isOpen: boolean;
-  onClose: () => void;
+  user: User | null;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpen, onClose }) => {
-  const { user, isAdmin, logout } = useAuth();
+export const Sidebar: React.FC<SidebarProps> = ({
+  currentTab,
+  onSelectTab,
+  user,
+  isOpen = false,
+  onClose,
+}) => {
+  const isAdmin = user?.role === 'ADMIN';
 
-  const handleNav = (tab: string) => {
-    onSelectTab(tab);
-    if (window.innerWidth < 1024) {
-      onClose();
-    }
-  };
+  const navItems = [
+    { id: 'dashboard', label: 'Genel Bakış & Özet', icon: LayoutDashboard },
+    { id: 'assets', label: 'Demirbaş Envanteri', icon: Layers },
+    ...(isAdmin ? [{ id: 'users', label: 'Personel & Yetki', icon: Users }] : []),
+  ];
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-      <div className="sidebar-brand">
-        <div className="brand-icon-box">
-          <Boxes size={24} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="brand-text-title">IT DEMİRBAŞ</div>
-          <div className="brand-text-sub">Zimmet Yönetimi</div>
-        </div>
-        <button
-          className="btn-icon mobile-menu-btn"
+    <>
+      {/* Mobil Karartma Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
-          style={{ background: 'transparent', border: 'none', color: '#94a3b8' }}
-        >
-          <X size={20} />
-        </button>
-      </div>
+        />
+      )}
 
-      <nav className="sidebar-nav">
-        <div className="nav-section-title">Ana Menü</div>
-
-        <button
-          className={`nav-item ${currentTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => handleNav('dashboard')}
-          id="nav-dashboard"
-        >
-          <LayoutDashboard size={18} />
-          <span>Gösterge Paneli</span>
-        </button>
-
-        <button
-          className={`nav-item ${currentTab === 'assets' ? 'active' : ''}`}
-          onClick={() => handleNav('assets')}
-          id="nav-assets"
-        >
-          <Boxes size={18} />
-          <span>Demirbaş Envanteri</span>
-        </button>
-
-        <button
-          className={`nav-item ${currentTab === 'custody' ? 'active' : ''}`}
-          onClick={() => handleNav('custody')}
-          id="nav-custody"
-        >
-          <FileCheck2 size={18} />
-          <span>Zimmet & Geçmiş</span>
-        </button>
-
-        <button
-          className={`nav-item ${currentTab === 'my-assets' ? 'active' : ''}`}
-          onClick={() => handleNav('my-assets')}
-          id="nav-my-assets"
-        >
-          <FolderLock size={18} />
-          <span>Kişisel Zimmetlerim</span>
-        </button>
-
-        <div className="nav-section-title">Saha & Mobil Modu</div>
-
-        <button
-          className={`nav-item ${currentTab === 'scanner' ? 'active' : ''}`}
-          onClick={() => handleNav('scanner')}
-          id="nav-scanner"
-        >
-          <QrCode size={18} />
-          <span>Saha QR Tarayıcı</span>
-        </button>
-
-        {isAdmin && (
-          <>
-            <div className="nav-section-title">Yönetim (Admin)</div>
-
-            <button
-              className={`nav-item ${currentTab === 'users' ? 'active' : ''}`}
-              onClick={() => handleNav('users')}
-              id="nav-users"
-            >
-              <Users size={18} />
-              <span>Kullanıcı Yönetimi</span>
-            </button>
-          </>
-        )}
-      </nav>
-
-      <div className="sidebar-footer">
-        <div className="user-mini-card">
-          <div className="user-avatar">
-            {user?.fullName?.charAt(0) || 'U'}
+      <aside
+        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-slate-950 border-r border-slate-800 flex flex-col z-50 transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        {/* Başlık & Logo */}
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-700/30 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xl">
+              TOGU
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white tracking-wide">IT ZİMMET SİSTEMİ</div>
+              <div className="text-[10px] text-blue-400 font-semibold tracking-wider">v2.0 PRODUCTION</div>
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="user-info-name" title={user?.fullName}>{user?.fullName}</div>
-            <div className="user-info-role">
-              {isAdmin ? (
-                <>
-                  <ShieldCheck size={12} color="#3b82f6" />
-                  <span style={{ color: '#60a5fa' }}>Yönetici (Admin)</span>
-                </>
-              ) : (
-                <span>Personel</span>
-              )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="md:hidden text-slate-400 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Menü Öğeleri */}
+        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+          <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            YÖNETİM MODÜLLERİ
+          </div>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  onSelectTab(item.id);
+                  if (onClose) onClose();
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/40 shadow-sm shadow-blue-500/10'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+
+          <div className="pt-4 px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            KURUMSAL BİLGİ
+          </div>
+          <div className="px-3.5 py-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 space-y-1">
+            <p className="font-semibold text-slate-300">Tokat Gaziosmanpaşa Üniv.</p>
+            <p className="text-[11px] text-slate-400">Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü</p>
+          </div>
+        </nav>
+
+        {/* Geliştirici Künyesi (Developer Footer) */}
+        <div className="p-4 border-t border-slate-800 bg-slate-900/40">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
+              IC
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white truncate">Işıl Cüre</p>
+              <a
+                href="https://github.com/isil-cure"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+              >
+                <span>github.com/isil-cure</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
             </div>
           </div>
         </div>
-
-        <button
-          onClick={logout}
-          className="btn btn-outline btn-sm"
-          style={{ width: '100%', justifyContent: 'center' }}
-          id="btn-logout"
-        >
-          <LogOut size={15} />
-          <span>Güvenli Çıkış</span>
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

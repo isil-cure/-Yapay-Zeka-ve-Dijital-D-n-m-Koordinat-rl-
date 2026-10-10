@@ -1,32 +1,66 @@
 version: '3.8'
 
 services:
+  # 1. PostgreSQL Veritabanı Servisi
+  postgres:
+    image: postgres:15-alpine
+    container_name: togu_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: togu_admin
+      POSTGRES_PASSWORD: togu_secure_password_2026
+      POSTGRES_DB: togu_inventory
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U togu_admin -d togu_inventory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - togu_network
+
+  # 2. Node.js Express REST API Backend Servisi
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: it_asset_backend
-    restart: unless-stopped
+    container_name: togu_backend
+    restart: always
     ports:
       - "5000:5000"
     environment:
-      - PORT=5000
-      - DATABASE_URL=file:./dev.db
-      - JWT_SECRET=kurum-it-secret-super-secure-key-2026
-      - NODE_ENV=production
-    volumes:
-      - backend-db:/app/prisma
+      PORT: 5000
+      DATABASE_URL: postgresql://togu_admin:togu_secure_password_2026@postgres:5432/togu_inventory?schema=public
+      JWT_SECRET: togu-jwt-secret-key-2026
+      JWT_EXPIRES_IN: 24h
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - togu_network
 
+  # 3. React Vite Tailwind Frontend Servisi (Nginx ile 3000 portunda sunulur)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: it_asset_frontend
-    restart: unless-stopped
+    container_name: togu_frontend
+    restart: always
     ports:
       - "3000:80"
     depends_on:
       - backend
+    networks:
+      - togu_network
 
 volumes:
-  backend-db:
+  postgres_data:
+    driver: local
+
+networks:
+  togu_network:
+    driver: bridge

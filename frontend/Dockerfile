@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY vite.config.ts ./
+COPY tailwind.config.js postcss.config.js ./
 COPY index.html ./
 
 RUN npm install

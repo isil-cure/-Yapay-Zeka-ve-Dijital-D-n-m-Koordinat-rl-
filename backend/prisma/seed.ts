@@ -1,338 +1,218 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role, AssetStatus, AssignmentAction } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import QRCode from 'qrcode';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Veritabanı tohumlama başlatılıyor...');
+  console.log('🔄 Veritabanı tohumlama (seed) işlemi başlatılıyor...');
 
-  // Temizlik
-  await prisma.custodyLog.deleteMany();
+  // 1. Temizleme
+  await prisma.assignmentHistory.deleteMany();
   await prisma.asset.deleteMany();
-  await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
-  // Şifreler
-  const adminPassword = await bcrypt.hash('Admin123!', 10);
-  const staffPassword = await bcrypt.hash('Personel123!', 10);
+  // 2. Kullanıcılar
+  const adminPasswordHash = await bcrypt.hash('admin123', 10);
+  const staffPasswordHash = await bcrypt.hash('personel123', 10);
 
-  // Kullanıcılar
-  const admin = await prisma.user.create({
+  const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@kurum.gov.tr',
-      password: adminPassword,
-      fullName: 'Gökhan Yıldırım',
-      department: 'Bilgi İşlem ve Dijital Dönüşüm',
-      role: 'ADMIN',
-      phone: '+90 532 100 0001',
-      isActive: true,
+      email: 'admin@gop.edu.tr',
+      passwordHash: adminPasswordHash,
+      fullName: 'Işıl Cüre (Admin)',
+      department: 'Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü',
+      role: Role.ADMIN,
     },
   });
 
-  const staff1 = await prisma.user.create({
+  const staffUser1 = await prisma.user.create({
     data: {
-      email: 'ahmet.yilmaz@kurum.gov.tr',
-      password: staffPassword,
+      email: 'personel@gop.edu.tr',
+      passwordHash: staffPasswordHash,
       fullName: 'Ahmet Yılmaz',
-      department: 'Yazılım ve Yapay Zeka',
-      role: 'STAFF',
-      phone: '+90 533 200 0002',
-      isActive: true,
+      department: 'Bilgi İşlem Daire Başkanlığı',
+      role: Role.STAFF,
     },
   });
 
-  const staff2 = await prisma.user.create({
+  const staffUser2 = await prisma.user.create({
     data: {
-      email: 'ayse.demir@kurum.gov.tr',
-      password: staffPassword,
-      fullName: 'Ayşe Demir',
-      department: 'Veri Analitiği ve İş Zekası',
-      role: 'STAFF',
-      phone: '+90 534 300 0003',
-      isActive: true,
-    },
-  });
-
-  const staff3 = await prisma.user.create({
-    data: {
-      email: 'mehmet.kaya@kurum.gov.tr',
-      password: staffPassword,
+      email: 'mehmet.kaya@gop.edu.tr',
+      passwordHash: staffPasswordHash,
       fullName: 'Mehmet Kaya',
-      department: 'Sistem ve Ağ Güvenliği',
-      role: 'STAFF',
-      phone: '+90 535 400 0004',
-      isActive: true,
+      department: 'Yazılım ve Yapay Zeka AR-GE',
+      role: Role.STAFF,
     },
   });
 
-  const staff4 = await prisma.user.create({
-    data: {
-      email: 'zeynep.celik@kurum.gov.tr',
-      password: staffPassword,
-      fullName: 'Zeynep Çelik',
-      department: 'İnsan Kaynakları Koordinatörlüğü',
-      role: 'STAFF',
-      phone: '+90 536 500 0005',
-      isActive: true,
+  console.log('✅ Kullanıcılar oluşturuldu (1 Admin, 2 Personel)');
+
+  // 3. Demirbaş Listesi
+  const rawAssets = [
+    {
+      assetTag: 'TOGU-2026-001',
+      name: 'ThinkPad P16 Gen 2 Mobil İş İstasyonu',
+      brand: 'Lenovo',
+      model: 'ThinkPad P16 (i9 / 64GB / RTX 4080)',
+      serialNumber: 'LN-P16-99210-TR',
+      purchaseDate: new Date('2024-03-15'),
+      status: AssetStatus.ACTIVE,
+      assignedToUserId: staffUser2.id,
+      notes: 'Yapay Zeka LLM fine-tuning ve veri analizi projeleri için tahsis edildi.',
     },
-  });
-
-  console.log('✅ Kullanıcılar oluşturuldu.');
-
-  // Kategoriler
-  const catLaptop = await prisma.category.create({
-    data: { name: 'Dizüstü Bilgisayar', code: 'LAP', icon: 'Laptop' },
-  });
-  const catDesktop = await prisma.category.create({
-    data: { name: 'Masaüstü Bilgisayar', code: 'DSK', icon: 'Monitor' },
-  });
-  const catServer = await prisma.category.create({
-    data: { name: 'Sunucu ve Veri Depolama', code: 'SRV', icon: 'Server' },
-  });
-  const catMonitor = await prisma.category.create({
-    data: { name: 'Monitör ve Ekran', code: 'MON', icon: 'Tv' },
-  });
-  const catNetwork = await prisma.category.create({
-    data: { name: 'Ağ ve Güvenlik Cihazı', code: 'NET', icon: 'Network' },
-  });
-  const catPrinter = await prisma.category.create({
-    data: { name: 'Yazıcı ve Tarayıcı', code: 'PRN', icon: 'Printer' },
-  });
-
-  console.log('✅ Kategoriler oluşturuldu.');
-
-  // Demirbaşlar & Zimmetler
-  const asset1 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0001',
-      serialNumber: 'C02G90XXMD6M',
+    {
+      assetTag: 'TOGU-2026-002',
+      name: 'MacBook Pro 16 M3 Max',
       brand: 'Apple',
-      model: 'MacBook Pro 16" M3 Max 36GB',
-      categoryId: catLaptop.id,
-      purchaseDate: new Date('2025-01-15'),
-      warrantyEndDate: new Date('2028-01-15'),
-      status: 'ASSIGNED',
-      location: 'Yazılım Ofisi - Masa 14',
-      cost: 115000,
-      notes: 'Yapay zeka modeli geliştirme ve kodlama için tahsis edildi.',
-      currentUserId: staff1.id,
+      model: 'MacBook Pro 16" (16-Core CPU, 40-Core GPU, 48GB)',
+      serialNumber: 'AP-MBP16-M3X-774',
+      purchaseDate: new Date('2024-02-10'),
+      status: AssetStatus.ACTIVE,
+      assignedToUserId: staffUser1.id,
+      notes: 'Sistem mimarisi ve iOS / Cross-platform servis geliştirme amaçlı tahsis.',
     },
-  });
-
-  const asset2 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0002',
-      serialNumber: 'DL-XPS-9530-991',
+    {
+      assetTag: 'TOGU-2026-003',
+      name: 'PowerEdge R750xs Rack Sunucu',
       brand: 'Dell',
-      model: 'XPS 15 9530 i7-13700H 32GB',
-      categoryId: catLaptop.id,
-      purchaseDate: new Date('2025-02-10'),
-      warrantyEndDate: new Date('2028-02-10'),
-      status: 'ASSIGNED',
-      location: 'Veri Analitiği Ofisi - Masa 06',
-      cost: 72000,
-      notes: 'Veri analitiği ve dashboard çalışmaları için verildi.',
-      currentUserId: staff2.id,
+      model: 'PowerEdge R750xs (2x Intel Xeon Silver, 128GB RAM)',
+      serialNumber: 'DL-R750-SVC-8841',
+      purchaseDate: new Date('2023-11-20'),
+      status: AssetStatus.IN_STOCK,
+      assignedToUserId: null,
+      notes: 'TOGU Veri Merkezi Sistem Odası Kabin A3 için yedek depoda tutuluyor.',
     },
-  });
-
-  const asset3 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0003',
-      serialNumber: 'PF-4X990A-LN',
-      brand: 'Lenovo',
-      model: 'ThinkPad T14 Gen 4 Ryzen 7',
-      categoryId: catLaptop.id,
-      purchaseDate: new Date('2025-03-01'),
-      warrantyEndDate: new Date('2028-03-01'),
-      status: 'AVAILABLE',
-      location: 'Merkez IT Depo - Raf A1',
-      cost: 48000,
-      notes: 'Yedek personel cihazı olarak hazır bekliyor.',
-    },
-  });
-
-  const asset4 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0004',
-      serialNumber: 'HP-ZBK-88210',
-      brand: 'HP',
-      model: 'ZBook Studio G9 i9-12900HK',
-      categoryId: catLaptop.id,
-      purchaseDate: new Date('2024-11-20'),
-      warrantyEndDate: new Date('2027-11-20'),
-      status: 'AVAILABLE',
-      location: 'Merkez IT Depo - Raf A2',
-      cost: 65000,
-      notes: 'Yüksek performanslı yedek iş istasyonu.',
-    },
-  });
-
-  const asset5 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0005',
-      serialNumber: 'SRV-R750-88002',
-      brand: 'Dell',
-      model: 'PowerEdge R750 2x Xeon 256GB',
-      categoryId: catServer.id,
-      purchaseDate: new Date('2024-06-12'),
-      warrantyEndDate: new Date('2029-06-12'),
-      status: 'AVAILABLE',
-      location: 'Veri Merkezi - Kabinet B04',
-      cost: 380000,
-      notes: 'Kurumsal yapay zeka çıkarım sunucusu.',
-    },
-  });
-
-  const asset6 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0006',
-      serialNumber: 'DELL-U2723QE-01',
-      brand: 'Dell',
-      model: 'UltraSharp U2723QE 27" 4K IPS',
-      categoryId: catMonitor.id,
-      purchaseDate: new Date('2025-01-15'),
-      warrantyEndDate: new Date('2028-01-15'),
-      status: 'ASSIGNED',
-      location: 'Yazılım Ofisi - Masa 14',
-      cost: 24000,
-      notes: 'Çift monitör kurulumu için verildi.',
-      currentUserId: staff1.id,
-    },
-  });
-
-  const asset7 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0007',
-      serialNumber: 'LG-34WN80C-77',
-      brand: 'LG',
-      model: '34WN80C-B 34" Ultrawide Curved',
-      categoryId: catMonitor.id,
-      purchaseDate: new Date('2025-02-15'),
-      warrantyEndDate: new Date('2027-02-15'),
-      status: 'AVAILABLE',
-      location: 'Merkez IT Depo - Raf M2',
-      cost: 19500,
-      notes: 'Kullanıma hazır geniş ekran monitör.',
-    },
-  });
-
-  const asset8 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0008',
-      serialNumber: 'CSCO-C9200-48P-09',
+    {
+      assetTag: 'TOGU-2026-004',
+      name: 'Catalyst 9300 48-Port PoE+ Ağ Anahtarı',
       brand: 'Cisco',
-      model: 'Catalyst 9200 48-Port PoE+',
-      categoryId: catNetwork.id,
-      purchaseDate: new Date('2024-04-10'),
-      warrantyEndDate: new Date('2029-04-10'),
-      status: 'AVAILABLE',
-      location: 'Sistem Odası Ağ Kabini 2',
-      cost: 110000,
-      notes: 'Ağ altyapı omurga anahtarı.',
+      model: 'C9300-48P-A Gigabit Switch',
+      serialNumber: 'CS-C9300-48P-9902',
+      purchaseDate: new Date('2023-09-05'),
+      status: AssetStatus.IN_STOCK,
+      assignedToUserId: null,
+      notes: 'Rektörlük B Binası omurga ağ genişletmesi için hazırda tutulmaktadır.',
     },
-  });
-
-  const asset9 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0009',
-      serialNumber: 'HP-LJ-M608-ERR',
-      brand: 'HP',
-      model: 'LaserJet Enterprise M608x',
-      categoryId: catPrinter.id,
-      purchaseDate: new Date('2023-08-20'),
-      warrantyEndDate: new Date('2025-08-20'),
-      status: 'IN_REPAIR',
-      location: 'Yetkili Servis (Toner/Fırın Arızası)',
-      cost: 32000,
-      notes: 'Fırın ünitesinde mekanik ses ve kağıt sıkışması bildirildi, servise gönderildi.',
+    {
+      assetTag: 'TOGU-2026-005',
+      name: 'UltraSharp U3223QE 4K Hub Monitör',
+      brand: 'Dell',
+      model: 'U3223QE 31.5" 4K IPS Black USB-C Hub',
+      serialNumber: 'DL-U3223-90112-TR',
+      purchaseDate: new Date('2024-04-01'),
+      status: AssetStatus.ACTIVE,
+      assignedToUserId: staffUser2.id,
+      notes: 'Yüksek çözünürlüklü arayüz ve grafik tasarım işleri için zimmetlendi.',
     },
-  });
-
-  const asset10 = await prisma.asset.create({
-    data: {
-      assetTag: 'AST-2026-0010',
-      serialNumber: 'LN-TC-M70Q-OLD',
+    {
+      assetTag: 'TOGU-2026-006',
+      name: 'ProLiant DL380 Gen10 Plus Sunucu',
+      brand: 'HPE',
+      model: 'DL380 Gen10 Plus 8SFF (2x Xeon Gold, 256GB RAM)',
+      serialNumber: 'HP-DL380-G10-664',
+      purchaseDate: new Date('2023-08-14'),
+      status: AssetStatus.IN_STOCK,
+      assignedToUserId: null,
+      notes: 'Sanallaştırma kümesi yedek node olarak depoda bekletiliyor.',
+    },
+    {
+      assetTag: 'TOGU-2026-007',
+      name: 'Latitude 5540 Kurumsal Dizüstü Bilgisayar',
+      brand: 'Dell',
+      model: 'Latitude 5540 (i7-1365U / 16GB / 512GB)',
+      serialNumber: 'DL-LAT5540-10492',
+      purchaseDate: new Date('2023-05-18'),
+      status: AssetStatus.IN_REPAIR,
+      assignedToUserId: null,
+      notes: 'Anakart şarj devresi arızası nedeniyle yetkili teknik serviste işlem görüyor.',
+    },
+    {
+      assetTag: 'TOGU-2026-008',
+      name: 'ThinkVision P27h-30 QHD Monitör',
       brand: 'Lenovo',
-      model: 'ThinkCentre M70q Gen 1 i5-10400T',
-      categoryId: catDesktop.id,
-      purchaseDate: new Date('2020-05-10'),
-      warrantyEndDate: new Date('2023-05-10'),
-      status: 'SCRAPPED',
-      location: 'Hurda / Geri Dönüşüm Alanı',
-      cost: 12000,
-      notes: 'Anakart yanması sonucu onarım maliyeti yüksek bulunduğundan hurdaya ayrıldı.',
+      model: 'P27h-30 27" QHD IPS Type-C Dock',
+      serialNumber: 'LN-TVP27-00912-SC',
+      purchaseDate: new Date('2021-01-10'),
+      status: AssetStatus.SCRAPPED,
+      assignedToUserId: null,
+      notes: 'Panel kırılması ve onarım maliyetinin cihaz değerini aşması nedeniyle hurdaya ayrıldı.',
     },
-  });
+  ];
 
-  console.log('✅ Demirbaşlar oluşturuldu.');
+  for (const item of rawAssets) {
+    const qrDataUrl = await QRCode.toDataURL(item.assetTag, {
+      errorCorrectionLevel: 'H',
+      margin: 2,
+      width: 320,
+      color: {
+        dark: '#1e3a8a', // TOGU Koyu Mavi
+        light: '#ffffff',
+      },
+    });
 
-  // Zimmet Tarihçe Kayıtları (Custody Logs)
-  await prisma.custodyLog.create({
-    data: {
-      assetId: asset1.id,
-      userId: staff1.id,
-      performedById: admin.id,
-      actionType: 'ASSIGN',
-      notes: 'Yazılım ekibi yapay zeka geliştirme için sıfır kutusunda teslim edildi.',
-      documentNo: 'ZMT-2026-001',
-      actionDate: new Date('2025-01-16'),
-    },
-  });
+    const asset = await prisma.asset.create({
+      data: {
+        assetTag: item.assetTag,
+        name: item.name,
+        brand: item.brand,
+        model: item.model,
+        serialNumber: item.serialNumber,
+        purchaseDate: item.purchaseDate,
+        status: item.status,
+        qrCode: qrDataUrl,
+        assignedToUserId: item.assignedToUserId,
+      },
+    });
 
-  await prisma.custodyLog.create({
-    data: {
-      assetId: asset6.id,
-      userId: staff1.id,
-      performedById: admin.id,
-      actionType: 'ASSIGN',
-      notes: 'Çift ekran çalışma desteği için monitör teslimi yapıldı.',
-      documentNo: 'ZMT-2026-002',
-      actionDate: new Date('2025-01-16'),
-    },
-  });
+    // Zimmet Geçmişi Kaydı (AssignmentHistory)
+    if (item.status === AssetStatus.ACTIVE && item.assignedToUserId) {
+      await prisma.assignmentHistory.create({
+        data: {
+          assetId: asset.id,
+          userId: item.assignedToUserId,
+          action: AssignmentAction.ASSIGN,
+          notes: item.notes,
+          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7), // 7 gün önce
+        },
+      });
+    } else if (item.status === AssetStatus.IN_REPAIR) {
+      await prisma.assignmentHistory.create({
+        data: {
+          assetId: asset.id,
+          userId: null,
+          action: AssignmentAction.STATUS_CHANGE,
+          notes: item.notes,
+        },
+      });
+    } else if (item.status === AssetStatus.SCRAPPED) {
+      await prisma.assignmentHistory.create({
+        data: {
+          assetId: asset.id,
+          userId: null,
+          action: AssignmentAction.STATUS_CHANGE,
+          notes: item.notes,
+        },
+      });
+    } else {
+      await prisma.assignmentHistory.create({
+        data: {
+          assetId: asset.id,
+          userId: null,
+          action: AssignmentAction.STATUS_CHANGE,
+          notes: 'Envanter girişi yapıldı ve depoya alındı.',
+        },
+      });
+    }
+  }
 
-  await prisma.custodyLog.create({
-    data: {
-      assetId: asset2.id,
-      userId: staff2.id,
-      performedById: admin.id,
-      actionType: 'ASSIGN',
-      notes: 'Veri analitiği departmanı iş istasyonu teslimi.',
-      documentNo: 'ZMT-2026-003',
-      actionDate: new Date('2025-02-11'),
-    },
-  });
-
-  await prisma.custodyLog.create({
-    data: {
-      assetId: asset9.id,
-      performedById: admin.id,
-      actionType: 'REPAIR_SENT',
-      notes: 'Fırın ünitesi mekanik arızası sebebiyle HP Yetkili Servise sevk edildi.',
-      documentNo: 'SRV-2026-044',
-      actionDate: new Date('2026-03-01'),
-    },
-  });
-
-  await prisma.custodyLog.create({
-    data: {
-      assetId: asset10.id,
-      performedById: admin.id,
-      actionType: 'SCRAP',
-      notes: 'Teknik heyet kararıyla kullanım ömrünü tamamlamış cihaz hurdaya ayrılmıştır.',
-      documentNo: 'HRD-2026-012',
-      actionDate: new Date('2026-02-15'),
-    },
-  });
-
-  console.log('✅ Zimmet geçmişi ve denetim logları oluşturuldu.');
-  console.log('🚀 Tohumlama başarıyla tamamlandı!');
+  console.log('✅ 8 adet gerçekçi TOGU demirbaşı ve QR kodları oluşturuldu');
+  console.log('🎉 Tohumlama (seed) başarıyla tamamlandı!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Hata:', e);
+    console.error('❌ Tohumlama hatası:', e);
     process.exit(1);
   })
   .finally(async () => {

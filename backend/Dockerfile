@@ -31,4 +31,5 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+# Container başlarken otomatik veritabanı şemasını senkronize eder, seed verilerini yükler ve sunucuyu başlatır
+CMD ["sh", "-c", "npx prisma db push && npx prisma db seed && node dist/index.js"]

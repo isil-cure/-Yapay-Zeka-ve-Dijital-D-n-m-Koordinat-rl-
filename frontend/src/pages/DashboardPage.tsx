@@ -1,336 +1,248 @@
-import React, { useEffect, useState } from 'react';
-import { api } from '../services/api';
-import {
-  Boxes,
-  CheckCircle2,
-  AlertTriangle,
-  Archive,
-  Users,
-  ArrowRight,
-  TrendingUp,
-  FileText,
-  Clock,
-  ShieldCheck,
-  RefreshCw,
-  DollarSign
-} from 'lucide-react';
-
-interface DashboardStats {
-  summary: {
-    totalAssets: number;
-    assignedCount: number;
-    availableCount: number;
-    inRepairCount: number;
-    scrappedCount: number;
-    totalUsers: number;
-    totalEstimatedValue: number;
-  };
-  categoryDistribution: Array<{
-    id: string;
-    name: string;
-    code: string;
-    count: number;
-  }>;
-  departmentDistribution: Array<{
-    department: string;
-    count: number;
-  }>;
-  recentLogs: Array<any>;
-}
+import React, { useState, useEffect } from 'react';
+import { dashboardApi } from '../services/api';
+import { DashboardStats, AssignmentAction } from '../types';
+import { StatCards } from '../components/StatCards';
+import { Activity, Plus, RefreshCw, Clock, ArrowRight, ShieldCheck, Building2, User } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface DashboardPageProps {
-  onNavigateTab: (tab: string) => void;
+  onNavigateAssets: (statusFilter?: string) => void;
+  onOpenAddModal: () => void;
+  isAdmin: boolean;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateTab }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({
+  onNavigateAssets,
+  onOpenAddModal,
+  isAdmin,
+}) => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = async () => {
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
     try {
       setLoading(true);
-      const data = await api.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error(error);
+      const res = await dashboardApi.getStats();
+      if (res.success) {
+        setStats(res.data);
+      }
+    } catch (err: any) {
+      toast.error('Dashboard verileri yüklenirken hata oluştu.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  const getActionBadge = (action: AssignmentAction) => {
+    switch (action) {
+      case 'ASSIGN':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            ZİMMETLENDİ
+          </span>
+        );
+      case 'RETURN':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            İADE ALINDI
+          </span>
+        );
+      case 'STATUS_CHANGE':
+        return (
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+            DURUM DEĞİŞİMİ
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
 
-  if (loading && !stats) {
+  if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '5rem 0', color: '#94a3b8' }}>
-        <RefreshCw size={32} className="spin-animate" style={{ margin: '0 auto 1rem' }} />
-        <p>İstatistikler ve envanter verileri yükleniyor...</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400 gap-3">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+        <p className="text-sm font-medium">İstatistikler ve denetim logları yükleniyor...</p>
       </div>
     );
   }
 
-  const { summary, categoryDistribution = [], departmentDistribution = [], recentLogs = [] } = stats || {
-    summary: { totalAssets: 0, assignedCount: 0, availableCount: 0, inRepairCount: 0, scrappedCount: 0, totalUsers: 0, totalEstimatedValue: 0 },
-    categoryDistribution: [],
-    departmentDistribution: [],
-    recentLogs: [],
-  };
+  if (!stats) return null;
 
   return (
-    <div>
-      {/* Top Banner / Hero Info */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(6, 182, 212, 0.1))',
-          border: '1px solid rgba(59, 130, 246, 0.25)',
-          borderRadius: 20,
-          padding: '1.5rem 2rem',
-          marginBottom: '2rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-        }}
-      >
+    <div className="space-y-6">
+      {/* Üst Karşılama ve Hızlı Eylem Başlığı */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-6 rounded-3xl backdrop-blur-md">
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü
-          </div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', marginTop: '4px' }}>
-            Kurumsal Donanım & Envanter Genel Görünümü
-          </h2>
-          <p style={{ fontSize: '0.88rem', color: '#94a3b8', marginTop: '4px' }}>
-            Tüm IT cihazlarının durumu, aktif zimmetler ve anlık teknik servis süreçleri tek merkezden izlenmektedir.
+          <h2 className="text-xl font-black text-white tracking-tight">Sistem Genel Bakış</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Tokat Gaziosmanpaşa Üniversitesi IT Demirbaş & Zimmet Takip Paneli
           </p>
         </div>
-
-        <button className="btn btn-secondary btn-sm" onClick={fetchStats} title="Yenile">
-          <RefreshCw size={14} />
-          <span>Verileri Yenile</span>
-        </button>
-      </div>
-
-      {/* KPI Stat Cards */}
-      <div className="stat-grid">
-        {/* Toplam Cihaz */}
-        <div className="stat-card" onClick={() => onNavigateTab('assets')} style={{ cursor: 'pointer' }}>
-          <div className="stat-card-inner">
-            <div>
-              <div className="stat-title">Toplam IT Donanımı</div>
-              <div className="stat-value">{summary.totalAssets}</div>
-              <div className="stat-subtext">Kayıtlı ve etiketlenmiş demirbaş</div>
-            </div>
-            <div className="stat-icon-wrapper" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
-              <Boxes size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Depoda / Boşta */}
-        <div className="stat-card" onClick={() => onNavigateTab('assets')} style={{ cursor: 'pointer' }}>
-          <div className="stat-card-inner">
-            <div>
-              <div className="stat-title">Depoda / Boşta Bekleyen</div>
-              <div className="stat-value" style={{ color: '#34d399' }}>{summary.availableCount}</div>
-              <div className="stat-subtext">Zimmete hazır donanım</div>
-            </div>
-            <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-              <Archive size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Zimmetli */}
-        <div className="stat-card" onClick={() => onNavigateTab('custody')} style={{ cursor: 'pointer' }}>
-          <div className="stat-card-inner">
-            <div>
-              <div className="stat-title">Personele Zimmetli</div>
-              <div className="stat-value" style={{ color: '#60a5fa' }}>{summary.assignedCount}</div>
-              <div className="stat-subtext">Aktif kullanımda olan donanım</div>
-            </div>
-            <div className="stat-icon-wrapper" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
-              <CheckCircle2 size={24} />
-            </div>
-          </div>
-        </div>
-
-        {/* Arızalı / Bakımda */}
-        <div className="stat-card" onClick={() => onNavigateTab('assets')} style={{ cursor: 'pointer' }}>
-          <div className="stat-card-inner">
-            <div>
-              <div className="stat-title">Arızalı / Bakımda</div>
-              <div className="stat-value" style={{ color: '#fbbf24' }}>{summary.inRepairCount}</div>
-              <div className="stat-subtext">Teknik servis ve onarım süreci</div>
-            </div>
-            <div className="stat-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-              <AlertTriangle size={24} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Grid: Kategoriler & Son Zimmet Hareketleri */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        {/* Kategori Dağılımı */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">
-              <Boxes size={18} color="#3b82f6" />
-              <span>Cihaz Kategori Dağılımı</span>
-            </div>
-            <button className="btn btn-outline btn-sm" onClick={() => onNavigateTab('assets')}>
-              Tümü
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={loadStats}
+            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+            title="Yenile"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          {isAdmin && (
+            <button
+              onClick={onOpenAddModal}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Yeni Demirbaş Ekle</span>
             </button>
-          </div>
-          <div className="card-body">
-            {categoryDistribution.length === 0 ? (
-              <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Kategori verisi bulunmuyor.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {categoryDistribution.map((cat) => {
-                  const percent = summary.totalAssets > 0 ? Math.round((cat.count / summary.totalAssets) * 100) : 0;
-                  return (
-                    <div key={cat.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: 600, color: '#f8fafc' }}>{cat.name}</span>
-                        <span style={{ color: '#94a3b8' }}>
-                          <strong style={{ color: '#60a5fa' }}>{cat.count}</strong> adet (%{percent})
-                        </span>
-                      </div>
-                      <div style={{ height: 8, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            height: '100%',
-                            width: `${percent}%`,
-                            background: 'linear-gradient(90deg, #2563eb, #06b6d4)',
-                            borderRadius: 4,
-                            transition: 'width 0.5s ease',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+          )}
+        </div>
+      </div>
+
+      {/* 4 Ana İstatistik Kartı */}
+      <StatCards
+        metrics={stats.metrics}
+        onFilterClick={(status) => onNavigateAssets(status)}
+      />
+
+      {/* İki Kolonlu Panel: Sol -> Son Zimmet Hareketleri, Sağ -> Departman Dağılımı */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Son Zimmet Hareketleri Tablosu (2 Kolon Genişlik) */}
+        <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center">
+                <Activity className="w-4 h-4" />
               </div>
-            )}
+              <div>
+                <h3 className="text-sm font-bold text-white">Son Zimmet Hareketleri</h3>
+                <p className="text-[11px] text-slate-400">Denetim izi ve anlık envanter kayıtları</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigateAssets()}
+              className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors"
+            >
+              <span>Tümünü Gör</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                  <th className="pb-3 pl-2">Demirbaş</th>
+                  <th className="pb-3">İşlem Türü</th>
+                  <th className="pb-3">İlgili Personel</th>
+                  <th className="pb-3">Tarih</th>
+                  <th className="pb-3 pr-2">Açıklama</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {stats.recentActivities.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-slate-400">
+                      Henüz zimmet hareketi kaydedilmedi.
+                    </td>
+                  </tr>
+                ) : (
+                  stats.recentActivities.map((act) => (
+                    <tr key={act.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3.5 pl-2 font-medium text-white">
+                        <div className="font-mono text-blue-400 font-bold text-[11px]">
+                          {act.asset?.assetTag || '—'}
+                        </div>
+                        <div className="text-slate-300 truncate max-w-[150px]">
+                          {act.asset?.name || 'Bilinmeyen Demirbaş'}
+                        </div>
+                      </td>
+                      <td className="py-3.5">{getActionBadge(act.action)}</td>
+                      <td className="py-3.5">
+                        {act.user ? (
+                          <div className="flex items-center gap-1.5 text-slate-200">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="font-medium truncate max-w-[120px]">{act.user.fullName}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Merkez Depo</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 text-slate-400 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span>
+                            {new Date(act.createdAt).toLocaleDateString('tr-TR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 pr-2 text-slate-400 truncate max-w-[180px]">
+                        {act.notes || '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Son Hareketler / Zimmet Akışı */}
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">
-              <Clock size={18} color="#06b6d4" />
-              <span>Son Zimmet & Servis Hareketleri</span>
+        {/* Sağ Kolon: Aktif Zimmet Departman Dağılımı */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center">
+              <Building2 className="w-4 h-4" />
             </div>
-            <button className="btn btn-outline btn-sm" onClick={() => onNavigateTab('custody')}>
-              Tüm Loglar
-            </button>
+            <div>
+              <h3 className="text-sm font-bold text-white">Departman Dağılımı</h3>
+              <p className="text-[11px] text-slate-400">Aktif zimmetli cihazların birimleri</p>
+            </div>
           </div>
-          <div className="card-body" style={{ padding: 0 }}>
-            {recentLogs.length === 0 ? (
-              <p style={{ padding: '1.5rem', color: '#94a3b8', fontSize: '0.88rem' }}>Henüz zimmet hareketi kaydedilmedi.</p>
+
+          <div className="space-y-4 flex-1">
+            {Object.keys(stats.departmentDistribution).length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-8">
+                Henüz personele zimmetlenmiş aktif cihaz yok.
+              </p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {recentLogs.map((log: any) => {
-                  const isAssign = log.actionType === 'ASSIGN';
-                  const isReturn = log.actionType === 'RETURN';
-                  const isFault = log.actionType === 'REPORT_FAULT' || log.actionType === 'REPAIR_SENT';
-
-                  return (
-                    <div
-                      key={log.id}
-                      style={{
-                        padding: '1rem 1.25rem',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '0.75rem',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 10,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: isAssign ? 'rgba(59, 130, 246, 0.15)' : isReturn ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                            color: isAssign ? '#60a5fa' : isReturn ? '#34d399' : '#fbbf24',
-                          }}
-                        >
-                          {isAssign ? <FileText size={18} /> : isReturn ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f8fafc' }}>
-                            {log.asset?.brand} {log.asset?.model}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                            {isAssign && `Zimmetlendi: ${log.user?.fullName || 'Personel'}`}
-                            {isReturn && `İade Alındı: ${log.user?.fullName || 'Personel'}`}
-                            {isFault && 'Arıza / Servis Süreci'}
-                            {' • '}
-                            <span style={{ color: '#64748b' }}>{new Date(log.actionDate).toLocaleDateString('tr-TR')}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <span
-                        className={`badge ${
-                          isAssign ? 'badge-assigned' : isReturn ? 'badge-available' : 'badge-repair'
-                        }`}
-                      >
-                        {isAssign ? 'Zimmet' : isReturn ? 'İade' : 'Arıza'}
+              Object.entries(stats.departmentDistribution).map(([dept, count]) => {
+                const total = stats.metrics.activeAssigned || 1;
+                const pct = Math.round((count / total) * 100);
+                return (
+                  <div key={dept} className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-300 font-medium truncate max-w-[160px]">{dept}</span>
+                      <span className="text-blue-400 font-bold font-mono">
+                        {count} Cihaz ({pct}%)
                       </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-blue-600 to-cyan-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Ek Bilgi: Departman Dağılımı ve Değer */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title">
-            <Users size={18} color="#8b5cf6" />
-            <span>Departman Bazlı Zimmet Kullanımı</span>
+          <div className="mt-6 pt-4 border-t border-slate-800/80 bg-slate-950/40 -mx-6 -mb-6 p-4 rounded-b-3xl text-center">
+            <p className="text-[11px] text-slate-400">
+              Tokat Gaziosmanpaşa Üniversitesi IT Varlık Güvenliği
+            </p>
           </div>
-          <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-            Tahmini Toplam Envanter Değeri: <strong style={{ color: '#34d399' }}>₺{summary.totalEstimatedValue?.toLocaleString('tr-TR')}</strong>
-          </div>
-        </div>
-        <div className="card-body">
-          {departmentDistribution.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Henüz departmanlara atanmış aktif zimmet kaydı bulunmuyor.</p>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-              {departmentDistribution.map((dept, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
-                    borderRadius: 12,
-                    padding: '1rem',
-                  }}
-                >
-                  <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 600 }}>{dept.department}</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc', marginTop: 4 }}>
-                    {dept.count} <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748b' }}>cihaz</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

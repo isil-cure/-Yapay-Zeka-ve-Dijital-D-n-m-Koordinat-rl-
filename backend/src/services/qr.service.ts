@@ -1,39 +1,42 @@
 import QRCode from 'qrcode';
-import { prisma } from '../prisma';
 
-export const generateQrDataUrl = async (data: string): Promise<string> => {
-  try {
-    return await QRCode.toDataURL(data, {
-      errorCorrectionLevel: 'H',
-      margin: 2,
-      width: 300,
-      color: {
-        dark: '#0f172a',
-        light: '#ffffff',
-      },
-    });
-  } catch (error) {
-    console.error('QR Kod üretim hatası:', error);
-    throw error;
-  }
-};
-
-export const generateNextAssetTag = async (): Promise<string> => {
-  const currentYear = new Date().getFullYear();
-  const count = await prisma.asset.count();
-  const nextNum = (count + 1).toString().padStart(4, '0');
-  
-  let candidateTag = `AST-${currentYear}-${nextNum}`;
-  
-  // Çakışma kontrolü
-  let exists = await prisma.asset.findUnique({ where: { assetTag: candidateTag } });
-  let offset = 1;
-  while (exists) {
-    const adjustedNum = (count + 1 + offset).toString().padStart(4, '0');
-    candidateTag = `AST-${currentYear}-${adjustedNum}`;
-    exists = await prisma.asset.findUnique({ where: { assetTag: candidateTag } });
-    offset++;
+export class QrService {
+  /**
+   * Demirbaş etiketi (assetTag) için yüksek kaliteli Base64 DataURL formatında QR kod üretir.
+   * @param assetTag Demirbaş benzersiz kodu (örn: TOGU-2026-001)
+   */
+  static async generateQrDataUrl(assetTag: string): Promise<string> {
+    try {
+      const dataUrl = await QRCode.toDataURL(assetTag, {
+        errorCorrectionLevel: 'H',
+        margin: 2,
+        width: 320,
+        color: {
+          dark: '#1e3a8a', // TOGU Kurumsal Mavi
+          light: '#ffffff',
+        },
+      });
+      return dataUrl;
+    } catch (error) {
+      console.error('QR Kod üretim hatası:', error);
+      throw new Error('QR kod üretimi başarısız oldu.');
+    }
   }
 
-  return candidateTag;
-};
+  /**
+   * SVG formatında QR Kod üretir (yazdırma / vektörel gereksinimler için).
+   */
+  static async generateQrSvg(assetTag: string): Promise<string> {
+    try {
+      const svg = await QRCode.toString(assetTag, {
+        type: 'svg',
+        errorCorrectionLevel: 'H',
+        margin: 2,
+      });
+      return svg;
+    } catch (error) {
+      console.error('QR SVG üretim hatası:', error);
+      throw new Error('QR SVG üretimi başarısız oldu.');
+    }
+  }
+}

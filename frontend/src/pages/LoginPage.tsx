@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { Boxes, Shield, User, ArrowRight, Lock, Mail, Sparkles } from 'lucide-react';
+import { authApi } from '../services/api';
+import { User } from '../types';
+import { Lock, Mail, Shield, User as UserIcon, LogIn, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
-  const { showToast } = useToast();
+interface LoginPageProps {
+  onLoginSuccess: (user: User, token: string) => void;
+}
 
+export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,185 +16,144 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      showToast('Lütfen e-posta ve şifrenizi giriniz.', 'error');
+      toast.error('Lütfen e-posta ve şifrenizi girin.');
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      await login(email, password);
-      showToast('Sisteme başarıyla giriş yapıldı.', 'success');
+      const res = await authApi.login(email, password);
+      if (res.success) {
+        localStorage.setItem('token', res.token);
+        localStorage.setItem('user', JSON.stringify(res.user));
+        toast.success(`Hoş geldiniz, ${res.user.fullName}!`);
+        onLoginSuccess(res.user, res.token);
+      }
     } catch (err: any) {
-      showToast(err.message || 'Giriş yapılamadı.', 'error');
+      toast.error(err.response?.data?.message || 'Giriş yapılamadı. Bilgilerinizi kontrol ediniz.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
+  const handleFillDemo = (demoEmail: string, demoPass: string) => {
     setEmail(demoEmail);
     setPassword(demoPass);
-    login(demoEmail, demoPass)
-      .then(() => showToast('Demo hesapla hızlı giriş yapıldı.', 'success'))
-      .catch((e) => showToast(e.message, 'error'));
+    toast.success(`${demoEmail} bilgileri dolduruldu.`);
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-        background: 'radial-gradient(ellipse at top, #1e293b 0%, #0b0f19 80%)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Decorative Glow */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '15%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+      {/* Arka plan ışık efektleri */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '460px',
-          background: 'rgba(17, 24, 39, 0.85)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '24px',
-          padding: '2.5rem',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.65)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div
-            style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '18px',
-              background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              margin: '0 auto 1.25rem',
-              boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
-            }}
-          >
-            <Boxes size={32} />
+      <div className="relative w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
+        {/* Logo ve Başlık */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-700 to-cyan-500 text-white font-black text-2xl shadow-xl shadow-blue-600/20 mb-4">
+            TOGU
           </div>
-
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.08em', color: '#60a5fa', textTransform: 'uppercase', marginBottom: '4px' }}>
-            T.C. Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü
-          </div>
-
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
-            IT Demirbaş ve Zimmet Sistemi
-          </h2>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '6px' }}>
-            Kurumsal donanım ve envanter yönetim portalı
+          <h2 className="text-xl font-bold text-white tracking-tight">IT Demirbaş ve Zimmet Sistemi</h2>
+          <p className="text-xs text-slate-400 mt-1">Tokat Gaziosmanpaşa Üniversitesi</p>
+          <p className="text-[11px] text-blue-400 font-semibold uppercase tracking-wider mt-0.5">
+            Yapay Zeka ve Dijital Dönüşüm Koordinatörlüğü
           </p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-email">Kurumsal E-Posta</label>
-            <div style={{ position: 'relative' }}>
+        {/* Giriş Formu */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              KURUMSAL E-POSTA
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Mail className="w-4 h-4" />
+              </div>
               <input
-                id="login-email"
                 type="email"
-                className="form-control"
-                placeholder="ad.soyad@kurum.gov.tr"
+                placeholder="admin@gop.edu.tr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ paddingLeft: '2.5rem' }}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500 transition-colors"
                 required
               />
-              <Mail size={16} color="#64748b" style={{ position: 'absolute', left: 14, top: 14 }} />
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-password">Şifre</label>
-            <div style={{ position: 'relative' }}>
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+              GÜVENLİ ŞİFRE
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
               <input
-                id="login-password"
                 type="password"
-                className="form-control"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={{ paddingLeft: '2.5rem' }}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500 transition-colors"
                 required
               />
-              <Lock size={16} color="#64748b" style={{ position: 'absolute', left: 14, top: 14 }} />
             </div>
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '0.85rem', marginTop: '0.5rem', fontSize: '0.95rem' }}
             disabled={loading}
-            id="btn-login-submit"
+            className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>{loading ? 'Giriş Yapılıyor...' : 'Sisteme Giriş Yap'}</span>
-            <ArrowRight size={18} />
+            {loading ? (
+              <span>Giriş Yapılıyor...</span>
+            ) : (
+              <>
+                <LogIn className="w-4 h-4" />
+                <span>Sisteme Giriş Yap</span>
+              </>
+            )}
           </button>
         </form>
 
-        {/* Quick Demo Switcher */}
-        <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-            <Sparkles size={14} color="#38bdf8" />
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Hızlı Değerlendirme Girişi (Demo Hesaplar)
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {/* Jüri ve Test Girişleri İçin Hızlı Doldurma Butonları */}
+        <div className="mt-8 pt-6 border-t border-slate-800">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center mb-3">
+            JÜRİ VE TEST HESAPLARI (TEK TIKLA DOLDUR)
+          </p>
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ justifyContent: 'space-between', padding: '0.6rem 0.85rem' }}
-              onClick={() => handleQuickLogin('admin@kurum.gov.tr', 'Admin123!')}
-              id="btn-demo-admin"
+              onClick={() => handleFillDemo('admin@gop.edu.tr', 'admin123')}
+              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-amber-500/50 group"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Shield size={14} color="#60a5fa" />
-                <span style={{ fontWeight: 600 }}>Yönetici (Admin) Girişi</span>
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                <Shield className="w-3.5 h-3.5" />
+                <span>Admin</span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Gökhan Yıldırım</span>
+              <div className="text-[11px] text-slate-400 truncate mt-0.5">admin@gop.edu.tr</div>
+              <div className="text-[10px] text-slate-400 font-mono">Şifre: admin123</div>
             </button>
 
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ justifyContent: 'space-between', padding: '0.6rem 0.85rem' }}
-              onClick={() => handleQuickLogin('ahmet.yilmaz@kurum.gov.tr', 'Personel123!')}
-              id="btn-demo-staff"
+              onClick={() => handleFillDemo('personel@gop.edu.tr', 'personel123')}
+              className="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-blue-500/50 group"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={14} color="#34d399" />
-                <span style={{ fontWeight: 600 }}>Standart Personel Girişi</span>
+              <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
+                <UserIcon className="w-3.5 h-3.5" />
+                <span>Personel</span>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ahmet Yılmaz (Yazılım)</span>
+              <div className="text-[11px] text-slate-400 truncate mt-0.5">personel@gop.edu.tr</div>
+              <div className="text-[10px] text-slate-400 font-mono">Şifre: personel123</div>
             </button>
           </div>
+        </div>
+
+        {/* Geliştirici İmzası */}
+        <div className="mt-6 text-center text-xs text-slate-400">
+          Geliştirici: <span className="font-semibold text-slate-400">Işıl Cüre</span>
         </div>
       </div>
     </div>
