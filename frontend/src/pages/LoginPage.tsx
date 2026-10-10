@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authApi } from '../services/api';
 import { User } from '../types';
-import { Lock, Mail, LogIn, HelpCircle, Shield, User as UserIcon, X, Info } from 'lucide-react';
+import { Lock, Mail, LogIn, HelpCircle, Shield, User as UserIcon, X, Info, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface LoginPageProps {
@@ -11,6 +11,7 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showJuryModal, setShowJuryModal] = useState(false);
 
@@ -23,7 +24,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     setLoading(true);
     try {
-      const res = await authApi.login(email, password);
+      const res = await authApi.login(email.trim(), password.trim());
       if (res.success) {
         localStorage.setItem('token', res.token);
         localStorage.setItem('user', JSON.stringify(res.user));
@@ -86,7 +87,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
               <input
                 type="email"
-                placeholder="ornek@gop.edu.tr"
+                placeholder="admin@gop.edu.tr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500 transition-colors"
@@ -104,13 +105,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <Lock className="w-4 h-4" />
               </div>
               <input
-                type="password"
-                placeholder="••••••••"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Şifrenizi giriniz"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500 transition-colors"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 placeholder:text-slate-500 transition-colors"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition-colors"
+                title={showPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -128,14 +137,48 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </>
             )}
           </button>
+
+          {/* Hızlı Test & Değerlendirme Butonları (Tek Tıkla Forma Aktar) */}
+          <div className="pt-3 border-t border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+              <span>Hızlı Değerlendirme / Test Girişi:</span>
+              <span className="text-blue-400 text-[10px]">Tek tıkla doldur</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin@gop.edu.tr');
+                  setPassword('admin123');
+                  toast.success('Yönetici bilgileri dolduruldu: admin123');
+                }}
+                className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Shield className="w-3.5 h-3.5 text-amber-400" />
+                <span>Yönetici (Admin)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('personel@gop.edu.tr');
+                  setPassword('personel123');
+                  toast.success('Personel bilgileri dolduruldu: personel123');
+                }}
+                className="px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <UserIcon className="w-3.5 h-3.5 text-blue-400" />
+                <span>Personel (Staff)</span>
+              </button>
+            </div>
+          </div>
         </form>
 
         {/* Güvenlik Bilgilendirmesi ve Alt Bilgi */}
-        <div className="mt-8 pt-6 border-t border-slate-800 text-center space-y-2">
+        <div className="mt-6 pt-4 border-t border-slate-800 text-center space-y-2">
           <p className="text-[11px] text-slate-400 font-medium">
             🔒 Tüm oturumlar JWT ve bcrypt şifreleme altyapısıyla korunmaktadır.
           </p>
-          <div className="pt-2 text-xs text-slate-400">
+          <div className="pt-1 text-xs text-slate-400">
             Geliştirici: <span className="font-semibold text-slate-300">Işıl Cüre</span>
           </div>
         </div>
