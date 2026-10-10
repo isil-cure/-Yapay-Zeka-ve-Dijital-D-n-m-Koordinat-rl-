@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authApi } from '../services/api';
 import { User } from '../types';
-import { Lock, Mail, Shield, User as UserIcon, LogIn, Sparkles } from 'lucide-react';
+import { Lock, Mail, LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface LoginPageProps {
@@ -34,12 +34,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFillDemo = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    toast.success(`${demoEmail} bilgileri dolduruldu.`);
   };
 
   return (
@@ -117,51 +111,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </button>
         </form>
 
-        {/* Jüri ve Değerlendirme Test Girişleri */}
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              DEĞERLENDİRME & JÜRİ TEST MODU
-            </span>
-            <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/40">
-              Hızlı Doldur
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleFillDemo('admin@gop.edu.tr', 'admin123')}
-              className="p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-amber-500/50 group"
-            >
-              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
-                <Shield className="w-3.5 h-3.5" />
-                <span>Yönetici (Admin)</span>
-              </div>
-              <div className="text-[11px] text-slate-400 truncate mt-1">admin@gop.edu.tr</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillDemo('personel@gop.edu.tr', 'personel123')}
-              className="p-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 text-left transition-all hover:border-blue-500/50 group"
-            >
-              <div className="flex items-center gap-1.5 text-blue-400 font-bold text-xs">
-                <UserIcon className="w-3.5 h-3.5" />
-                <span>Personel (Staff)</span>
-              </div>
-              <div className="text-[11px] text-slate-400 truncate mt-1">personel@gop.edu.tr</div>
-            </button>
-          </div>
-
-          <p className="text-[10px] text-slate-500 text-center mt-3">
-            🔒 Şifreler veritabanında tek yönlü bcrypt algoritmasıyla tuzlanarak (salt) şifrelenmiştir.
+        {/* Güvenlik Bilgilendirmesi ve Alt Bilgi */}
+        <div className="mt-8 pt-6 border-t border-slate-800 text-center space-y-2">
+          <p className="text-[11px] text-slate-400 font-medium">
+            🔒 Tüm oturumlar JWT ve bcrypt şifreleme altyapısıyla korunmaktadır.
           </p>
-        </div>
-
-        {/* Geliştirici İmzası */}
-        <div className="mt-6 text-center text-xs text-slate-400">
-          Geliştirici: <span className="font-semibold text-slate-400">Işıl Cüre</span>
+          <p className="text-[10px] text-slate-500">
+            Yetkisiz erişim denemeleri kurum güvenlik politikası gereğince kayıt altına alınır.
+          </p>
+          <div className="pt-2 text-xs text-slate-400">
+            Geliştirici: <span className="font-semibold text-slate-300">Işıl Cüre</span>
+          </div>
         </div>
       </div>
     </div>
